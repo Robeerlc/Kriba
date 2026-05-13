@@ -1,4 +1,4 @@
-# 📰 SmartFeed (Kriba) - Plataforma de Noticias Personalizada
+# 📰 Kriba - Plataforma de Noticias Personalizada
 
 ---
 
