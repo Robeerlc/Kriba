@@ -1,12 +1,15 @@
 package org.kriba.news.service;
 
 
+import org.kriba.news.model.NewsInfo;
 import org.kriba.news.model.NewsTotalArticles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 public class NewsServiceInfo {
@@ -24,15 +27,28 @@ public class NewsServiceInfo {
                 .uri("https://gnews.io/api/v4/top-headlines?lang=es&country=es&category=" + category + "&apikey=" + apiKey)
                 .retrieve()
                 .body(NewsTotalArticles.class);
-        if (response != null && response.getArticles() != null) {
-            response.getArticles().forEach(article -> article.setCategory(category));
+        if (response != null && response.articles() != null) {
+            response.articles().forEach(article -> article.setCategory(category));
         }
         return response != null ? response : new NewsTotalArticles(0L, Collections.emptyList());
     }
 
 
-        public NewsTotalArticles getGeneralFeed (){
-        return null;
-            //TODO generar feed general
+    public NewsTotalArticles getGeneralFeed() {
+        List<String> categories = List.of("general", "world", "nation", "business", "technology", "entertainment", "sports", "science", "health");
+        List<NewsInfo> allArticles = new ArrayList<>();
+
+        for (String cat : categories) {
+            try {
+                NewsTotalArticles response = getNewsByCategory(cat);
+                if (response != null && response.articles() != null) allArticles.addAll(response.articles());
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                System.err.println("Error al cargar la categoría " + cat + ": " + e.getMessage());
+            }
         }
+
+        Collections.shuffle(allArticles);
+        return new NewsTotalArticles((long) allArticles.size(), allArticles);
     }
+}

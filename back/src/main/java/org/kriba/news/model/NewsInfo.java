@@ -1,8 +1,19 @@
 package org.kriba.news.model;
 
+import lombok.Getter;
+import lombok.Setter;
 
-
-public record NewsInfo(String id, String title, String description, String content, String url,
-                       String image, String publishedAt, String lang, ResourceInfo source, String category) {
-
+@Setter
+@Getter
+public class NewsInfo {
+    private String id;
+    private String title;
+    private String description;
+    private String content;
+    private String url;
+    private String image;
+    private String publishedAt;
+    private String lang;
+    private ResourceInfo source;
+    private String category;
 }
