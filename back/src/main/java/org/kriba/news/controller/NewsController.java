@@ -3,7 +3,6 @@ package org.kriba.news.controller;
 import org.kriba.news.dto.FeedRequest;
 import org.kriba.news.model.NewsTotalArticles;
 import org.kriba.news.service.NewsServiceInfo;
-import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
