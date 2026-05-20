@@ -1,0 +1,35 @@
+package org.kriba.bookmarks.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SavedArticle {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
+    @Column(nullable = false)
+    private Long userId;
+
+    @Column(nullable = false)
+    private String externalArticleId;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private String url;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private LocalDateTime timeStamp = LocalDateTime.now();
+}
