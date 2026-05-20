@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping(path = "/api")
+@RequestMapping(path = "/api/v1/feed")
 public class NewsController {
 
     private final NewsServiceInfo newsService;
@@ -20,7 +20,7 @@ public class NewsController {
         this.userService = userService;
     }
 
-    @PostMapping(path = "/feed")
+    @PostMapping
     public ResponseEntity<NewsTotalArticles> getFeed(@RequestBody FeedRequest request) {
     	if (request != null && request.loginRequest() != null) 
     		userService.login(request.loginRequest());
