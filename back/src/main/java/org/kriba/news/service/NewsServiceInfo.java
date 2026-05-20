@@ -12,18 +12,20 @@ import java.util.List;
 
 @Service
 public class NewsServiceInfo {
-	
-	@Value("${apiKey}")
-    private String apiKey;
+
+    private final String apiKey;
     private final RestClient restClient;
 
-    public NewsServiceInfo(RestClient restClient) {
-        this.restClient = restClient;
+    public NewsServiceInfo(@Value("${apiKey}") String apiKey) {
+        this.apiKey = apiKey;
+        this.restClient = RestClient.builder()
+                .baseUrl("https://gnews.io/api/v4")
+                .build();
     }
 
     public NewsTotalArticles getNewsByCategory(String category) {
         NewsTotalArticles response = restClient.get()
-                .uri("https://gnews.io/api/v4/top-headlines?lang=es&country=es&category=" + category + "&apikey=" + apiKey)
+                .uri("/top-headlines?lang=es&country=es&category=" + category + "&apikey=" + apiKey)
                 .retrieve()
                 .body(NewsTotalArticles.class);
         if (response != null && response.articles() != null) {
@@ -40,7 +42,9 @@ public class NewsServiceInfo {
         for (String cat : categories) {
             try {
                 NewsTotalArticles response = getNewsByCategory(cat);
-                if (response != null && response.articles() != null) allArticles.addAll(response.articles());
+                if (response != null && response.articles() != null) {
+                    allArticles.addAll(response.articles());
+                }
                 Thread.sleep(1000);
             } catch (InterruptedException ex) {
                 System.err.println("Error al cargar la categoría " + cat + ": " + ex.getMessage());
