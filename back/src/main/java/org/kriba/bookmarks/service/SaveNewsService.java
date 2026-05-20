@@ -1,12 +1,11 @@
 package org.kriba.bookmarks.service;
 
+import org.kriba.analytics.model.Interaction;
+import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.bookmarks.dto.SaveRequest;
 import org.kriba.bookmarks.dto.SavedArticleInfo;
 import org.kriba.bookmarks.model.SavedArticle;
 import org.kriba.bookmarks.repository.SavedNewsRepository;
-import org.kriba.users.dto.LoginRequest;
-import org.kriba.users.model.User;
-import org.kriba.users.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,32 +14,37 @@ import java.util.List;
 public class SaveNewsService {
 
         private final SavedNewsRepository savedNewsRepository;
-        private final UserRepository userRepository;
+        private final InteractionRepository interactionRepository;
 
-        public SaveNewsService(SavedNewsRepository savedNewsRepository, UserRepository userRepository){
+        public SaveNewsService(SavedNewsRepository savedNewsRepository, InteractionRepository interactionRepository){
             this.savedNewsRepository = savedNewsRepository;
-            this.userRepository = userRepository;
+            this.interactionRepository = interactionRepository;
         }
 
 
-        public void saveNew(SaveRequest saveRequest){
-            User user = userRepository.findByEmail(saveRequest.loginRequest().email())
-                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-
+        public void saveNew(Long userId,SaveRequest saveRequest){
             SavedArticle savedArticle = SavedArticle.builder()
-                    .userId(user.getId())
+                    .userId(userId)
                     .externalArticleId(saveRequest.savedNew().externalArticleId())
                     .title(saveRequest.savedNew().title())
                     .url(saveRequest.savedNew().url())
                     .build();
+
+            Interaction interaction = Interaction.builder()
+                    .userId(userId)
+                    .articleCategory(saveRequest.savedNew().category())
+                    .interactionType("SAVE")
+                    .build();
+
+
             savedNewsRepository.save(savedArticle);
+            interactionRepository.save(interaction);
         }
 
-    public List<SavedArticleInfo> getSavedNews(LoginRequest request){
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    public List<SavedArticleInfo> getSavedNews(Long userId){
 
-           return savedNewsRepository.findAllByUserId(user.getId())
+
+           return savedNewsRepository.findAllByUserId(userId)
                    .stream()
                    .map(savedArticle -> SavedArticleInfo.builder()
                             .id(savedArticle.getId())
