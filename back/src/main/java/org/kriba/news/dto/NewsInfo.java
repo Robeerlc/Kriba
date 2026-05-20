@@ -1,4 +1,4 @@
-package org.kriba.news.model;
+package org.kriba.news.dto;
 
 import lombok.Getter;
 import lombok.Setter;
