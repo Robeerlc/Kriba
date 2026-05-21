@@ -28,7 +28,7 @@ public class SubscriptionsServiceInfo {
 	                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 		 
 		 Subscription subscription = Subscription.builder()
-				 .idUser(user.getId())
+				 .userId(user.getId())
 				 .externalSourceId(externalSourceId)
 				 .sourceName(sourceName).build();
 		 subscriptionRepository.save(subscription);

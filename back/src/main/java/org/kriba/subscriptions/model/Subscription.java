@@ -21,7 +21,7 @@ public class Subscription {
     private long id;
     
     @Column(nullable = false)
-	private Long idUser;
+	private Long userId;
     
     @Column(nullable = false)
 	private String externalSourceId;
