@@ -1,7 +1,7 @@
 package org.kriba.bookmarks.controller;
 
+import org.kriba.bookmarks.dto.ArticleResponseDto;
 import org.kriba.bookmarks.dto.SaveRequest;
-import org.kriba.bookmarks.dto.SavedArticleInfo;
 import org.kriba.bookmarks.service.SaveNewsService;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.dto.LoginRequest;
@@ -36,7 +36,7 @@ public class SaveNewsController {
     }
 
     @PostMapping("/list")
-    public ResponseEntity<List<SavedArticleInfo>> getSavedNews(@RequestBody LoginRequest request) {
+    public ResponseEntity<List<ArticleResponseDto>> getSavedNews(@RequestBody LoginRequest request) {
         if(request == null) return ResponseEntity.badRequest().build();
 
         AuthResponse authResponse = userService.login(request);

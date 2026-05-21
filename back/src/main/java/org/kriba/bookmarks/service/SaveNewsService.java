@@ -2,8 +2,8 @@ package org.kriba.bookmarks.service;
 
 import org.kriba.analytics.model.Interaction;
 import org.kriba.analytics.repository.InteractionRepository;
-import org.kriba.bookmarks.dto.SaveRequest;
-import org.kriba.bookmarks.dto.SavedArticleInfo;
+import org.kriba.bookmarks.dto.ArticleInputDto;
+import org.kriba.bookmarks.dto.ArticleResponseDto;
 import org.kriba.bookmarks.model.SavedArticle;
 import org.kriba.bookmarks.repository.SavedNewsRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class SaveNewsService {
             this.interactionRepository = interactionRepository;
         }
         
-        public void saveNew(Long userId, SavedNewInfo savedNew){
+        public void saveNew(Long userId, ArticleInputDto savedNew){
             SavedArticle savedArticle = SavedArticle.builder()
                     .userId(userId)
                     .externalArticleId(savedNew.externalArticleId())
@@ -38,9 +38,9 @@ public class SaveNewsService {
             interactionRepository.save(interaction);
         }
 
-    public List<SavedArticleInfo> getSavedNews(Long userId){
+    public List<ArticleResponseDto> getSavedNews(Long userId){
            return savedNewsRepository.findAllByUserId(userId).stream()
-                   .map(savedArticle -> SavedArticleInfo.builder()
+                   .map(savedArticle -> ArticleResponseDto.builder()
                                 .id(savedArticle.getId())
                                 .externalArticleId(savedArticle.getExternalArticleId())
                                 .title(savedArticle.getTitle())
