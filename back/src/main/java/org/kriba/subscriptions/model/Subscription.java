@@ -12,20 +12,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Subscription {
-	
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
-    
-    @Column(nullable = false)
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private long id;
+
+	@Column(nullable = false)
 	private Long userId;
-    
-    @Column(nullable = false)
+
+	@Column(nullable = false)
 	private String externalSourceId;
-    
-    @Column(nullable = false)
+
+	@Column(nullable = false)
 	private String sourceName;
 }
