@@ -1,8 +1,8 @@
 package org.kriba.news.controller;
 
 import org.kriba.news.dto.FeedRequest;
-import org.kriba.news.model.NewsTotalArticles;
-import org.kriba.news.service.NewsServiceInfo;
+import org.kriba.news.dto.NewsTotalArticles;
+import org.kriba.news.service.NewsInfoService;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,23 +12,25 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(path = "/api/v1/feed")
 public class NewsController {
 
-    private final NewsServiceInfo newsService;
+    private final NewsInfoService newsService;
     private final UserService userService;
 
-    public NewsController(NewsServiceInfo newsService, UserService userService) {
+    public NewsController(NewsInfoService newsService, UserService userService) {
         this.newsService = newsService;
         this.userService = userService;
     }
 
     @PostMapping
     public ResponseEntity<NewsTotalArticles> getFeed(@RequestBody FeedRequest request) {
-    	if (request != null && request.loginRequest() != null) 
-    		userService.login(request.loginRequest());
+        Long currentUserId = null;
+        if (request != null && request.loginRequest() != null) {
+            currentUserId = userService.login(request.loginRequest()).userId();
+        }
 
         String category = request != null ? request.category() : null;
         if (category != null && !category.isEmpty()) 
-        	return ResponseEntity.ok(newsService.getNewsByCategory(category));
+        	return ResponseEntity.ok(newsService.getNewsByCategory(category, 20));
 
-        return ResponseEntity.ok(newsService.getGeneralFeed());
+        return ResponseEntity.ok(newsService.getGeneralFeed(currentUserId));
     }
 }
