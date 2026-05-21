@@ -20,41 +20,33 @@ public class SaveNewsService {
             this.savedNewsRepository = savedNewsRepository;
             this.interactionRepository = interactionRepository;
         }
-
-
-        public void saveNew(Long userId,SaveRequest saveRequest){
+        
+        public void saveNew(Long userId, SavedNewInfo savedNew){
             SavedArticle savedArticle = SavedArticle.builder()
                     .userId(userId)
-                    .externalArticleId(saveRequest.savedNew().externalArticleId())
-                    .title(saveRequest.savedNew().title())
-                    .url(saveRequest.savedNew().url())
-                    .build();
+                    .externalArticleId(savedNew.externalArticleId())
+                    .title(savedNew.title())
+                    .url(savedNew.url())
+                    .build();    
+            savedNewsRepository.save(savedArticle);
 
             Interaction interaction = Interaction.builder()
                     .userId(userId)
-                    .articleCategory(saveRequest.savedNew().category())
+                    .articleCategory(savedNew.category())
                     .interactionType("SAVE")
-                    .build();
-
-
-            savedNewsRepository.save(savedArticle);
+                    .build();            
             interactionRepository.save(interaction);
         }
 
     public List<SavedArticleInfo> getSavedNews(Long userId){
-
-
-           return savedNewsRepository.findAllByUserId(userId)
-                   .stream()
+           return savedNewsRepository.findAllByUserId(userId).stream()
                    .map(savedArticle -> SavedArticleInfo.builder()
-                            .id(savedArticle.getId())
-                           .externalArticleId(savedArticle.getExternalArticleId())
-                           .title(savedArticle.getTitle())
-                           .url(savedArticle.getUrl())
-                           .timeStamp(savedArticle.getTimeStamp())
-                           .build())
+                                .id(savedArticle.getId())
+                                .externalArticleId(savedArticle.getExternalArticleId())
+                                .title(savedArticle.getTitle())
+                                .url(savedArticle.getUrl())
+                                .timeStamp(savedArticle.getTimeStamp())
+                                .build())
                    .toList();
-
-
     }
 }
