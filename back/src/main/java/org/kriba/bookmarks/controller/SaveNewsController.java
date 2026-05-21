@@ -1,6 +1,5 @@
 package org.kriba.bookmarks.controller;
 
-
 import org.kriba.bookmarks.dto.SaveRequest;
 import org.kriba.bookmarks.dto.SavedArticleInfo;
 import org.kriba.bookmarks.service.SaveNewsService;
@@ -26,19 +25,21 @@ public class SaveNewsController {
     }
 
     @PostMapping()
-    public ResponseEntity<Void> saveNew(@RequestBody SaveRequest request){
+    public ResponseEntity<Void> saveNew(@RequestBody SaveRequest request) {
+        if (request == null || request.loginRequest() == null || request.savedNew() == null) {
+            return ResponseEntity.badRequest().build();
+        }
         AuthResponse authResponse = userService.login(request.loginRequest());
-        saveNewsService.saveNew(authResponse.userId(),request);
+        saveNewsService.saveNew(authResponse.userId(), request.savedNew());
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
-
-
     }
 
     @PostMapping("/list")
-    public ResponseEntity<List<SavedArticleInfo>> getSavedNews(@RequestBody LoginRequest request){
+    public ResponseEntity<List<SavedArticleInfo>> getSavedNews(@RequestBody LoginRequest request) {
+        if(request == null) return ResponseEntity.badRequest().build();
+
         AuthResponse authResponse = userService.login(request);
         return ResponseEntity.ok(saveNewsService.getSavedNews(authResponse.userId()));
     }
-
 }
