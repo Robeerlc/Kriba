@@ -23,7 +23,7 @@ public class SubscriptionController {
 		this.userService = userService;
 	}
 
-	@PostMapping()
+	@PostMapping
 	public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request){
 		if (request == null || request.loginRequest() == null) {
 		    return ResponseEntity.badRequest().build();
