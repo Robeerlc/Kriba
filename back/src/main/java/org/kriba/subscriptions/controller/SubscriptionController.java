@@ -25,13 +25,13 @@ public class SubscriptionController {
 	}
 
 
-	@PostMapping("/subscribe")
+	@PostMapping()
 	public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request){
 		if (request == null || request.loginRequest() == null) {
 		    return ResponseEntity.badRequest().build();
 		}
 		AuthResponse authResponse = userService.login(request.loginRequest());
-		subscriptionService.subscribe(authResponse.userId(), request.externarlSourceId(), request.sourceName());
+		subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 	
