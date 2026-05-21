@@ -18,12 +18,10 @@ public class SubscriptionController {
 	private final SubscriptionsServiceInfo subscriptionService;
     private final UserService userService;
 	
-	
 	public SubscriptionController(SubscriptionsServiceInfo subscriptionService, UserService userService) {
 		this.subscriptionService = subscriptionService;
 		this.userService = userService;
 	}
-
 
 	@PostMapping()
 	public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request){
@@ -34,10 +32,4 @@ public class SubscriptionController {
 		subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
-	
-	
-	
-	
-
-	
 }
