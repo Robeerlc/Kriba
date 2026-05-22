@@ -13,27 +13,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class SubscriptionsService {
 
-	private final UserRepository userRepository;
 	private final SubscriptionRepository subscriptionRepository;
 
-	public SubscriptionsService(UserRepository userRepository, SubscriptionRepository subscriptionRepository) {
-		this.userRepository = userRepository;
+	public SubscriptionsService(SubscriptionRepository subscriptionRepository) {
 		this.subscriptionRepository = subscriptionRepository;
 	}
 
 	public void subscribe(long userId, String externalSourceId, String sourceName) {
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+		
 
 		Subscription subscription = Subscription.builder()
-				.userId(user.getId())
+				.userId(userId)
 				.externalSourceId(externalSourceId)
 				.sourceName(sourceName)
 				.build();
 		subscriptionRepository.save(subscription);
 	}
 
-	public SubscriptionList listSubscriptions(long userId) {
+	public SubscriptionList getSubscriptions(long userId) {
 
 		List<Subscription> subscriptions = subscriptionRepository.findAllByUserId(userId);
 

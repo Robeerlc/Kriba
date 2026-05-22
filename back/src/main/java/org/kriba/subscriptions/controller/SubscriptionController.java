@@ -40,7 +40,7 @@ public class SubscriptionController {
 			return ResponseEntity.badRequest().build();
 		}
 		AuthResponse authResponse = userService.login(request.loginRequest());
-		return ResponseEntity.ok(subscriptionService.listSubscriptions(authResponse.userId()));
+		return ResponseEntity.ok(subscriptionService.getSubscriptions(authResponse.userId()));
 	}
 }
 
