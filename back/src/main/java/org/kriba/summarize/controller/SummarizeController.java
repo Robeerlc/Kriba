@@ -30,6 +30,3 @@ public class SummarizeController {
         return ResponseEntity.ok(summarizeService.summarize(currentUserId, request.textContent(),request.articleUrl()));
     }
 }
-
-
-

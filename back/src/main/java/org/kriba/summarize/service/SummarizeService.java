@@ -1,5 +1,6 @@
 package org.kriba.summarize.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,10 +41,10 @@ public class SummarizeService {
 
     public SummarizeOutDTO summarize(Long currentUserId, String textContent, String articleUrl) {
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("No existe usuario con ese ID"));
+                .orElseThrow(() -> new IllegalArgumentException(""));
 
         if (user.getDailyAiLimit() <= 0) {
-            throw new IllegalArgumentException("¡No te quedan mas intentos! Espera a mañana");
+            throw new IllegalArgumentException("No te quedan intentos restantes");
         }
 
 
@@ -71,16 +72,34 @@ public class SummarizeService {
     private String extractTextFromGeminiResponse(String rawResponse) {
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
-            // La estructura de Google es: candidates[0].content.parts[0].text
-            return root.path("candidates")
-                    .get(0)
+
+            JsonNode candidates = root.path("candidates");
+
+            if (!candidates.isArray() || candidates.isEmpty()) {
+                throw new IllegalArgumentException();
+            }
+
+            JsonNode firstCandidate = candidates.get(0);
+            JsonNode parts = firstCandidate
                     .path("content")
-                    .path("parts")
-                    .get(0)
+                    .path("parts");
+
+            if (!parts.isArray() || parts.isEmpty()) {
+                throw new IllegalArgumentException();
+            }
+
+            String summary = parts.get(0)
                     .path("text")
                     .asText();
-        } catch (Exception e) {
-            throw new RuntimeException("Error al parsear la respuesta de Gemini. ¿El JSON cambió?", e);
+
+            if (summary == null || summary.isBlank()) {
+                throw new IllegalArgumentException();
+            }
+
+            return summary.trim();
+
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
