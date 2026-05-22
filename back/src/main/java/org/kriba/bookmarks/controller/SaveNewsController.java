@@ -1,6 +1,6 @@
 package org.kriba.bookmarks.controller;
 
-import org.kriba.bookmarks.dto.ArticleResponseDto;
+import org.kriba.bookmarks.dto.ArticleResponse;
 import org.kriba.bookmarks.dto.SaveRequest;
 import org.kriba.bookmarks.service.SaveNewsService;
 import org.kriba.users.dto.AuthResponse;
@@ -8,7 +8,10 @@ import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -19,7 +22,7 @@ public class SaveNewsController {
     private final SaveNewsService saveNewsService;
     private final UserService userService;
 
-    public  SaveNewsController(SaveNewsService saveNewsService, UserService userService){
+    public SaveNewsController(SaveNewsService saveNewsService, UserService userService) {
         this.saveNewsService = saveNewsService;
         this.userService = userService;
     }
@@ -36,8 +39,8 @@ public class SaveNewsController {
     }
 
     @PostMapping("/list")
-    public ResponseEntity<List<ArticleResponseDto>> getSavedNews(@RequestBody LoginRequest request) {
-        if(request == null) return ResponseEntity.badRequest().build();
+    public ResponseEntity<List<ArticleResponse>> getSavedNews(@RequestBody LoginRequest request) {
+        if (request == null) return ResponseEntity.badRequest().build();
 
         AuthResponse authResponse = userService.login(request);
         return ResponseEntity.ok(saveNewsService.getSavedNews(authResponse.userId()));
