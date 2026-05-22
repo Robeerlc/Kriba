@@ -1,16 +1,18 @@
 package org.kriba.summarize.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.kriba.analytics.model.Interaction;
+import org.kriba.analytics.repository.InteractionRepository;
+import org.kriba.summarize.dto.SummarizeResponse;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.kriba.summarize.dto.SummarizeOutDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -23,11 +25,13 @@ public class SummarizeService {
     private final UserRepository userRepository;
     private final String apiKeySummarize;
     private final ObjectMapper objectMapper;
+    private final InteractionRepository interactionRepository;
 
     public SummarizeService(
             @Value("${apiKeySummarize}") String apiKeySummarize,
             @Value("${geminiModel}") String model,
-            UserRepository userRepository) {
+            UserRepository userRepository, InteractionRepository interactionRepository) {
+        this.interactionRepository = interactionRepository;
         this.restClient = RestClient.builder()
                 .baseUrl("https://generativelanguage.googleapis.com/v1beta")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -39,7 +43,7 @@ public class SummarizeService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public SummarizeOutDTO summarize(Long currentUserId, String textContent, String articleUrl) {
+    public SummarizeResponse summarize(Long currentUserId, String textContent, String articleUrl, String category) {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException(""));
 
@@ -59,11 +63,16 @@ public class SummarizeService {
 
 
         String cleanSummary = extractTextFromGeminiResponse(rawResponse);
-
+        Interaction interaction = Interaction.builder()
+                .userId(currentUserId)
+                .articleCategory(category)
+                .interactionType("SUMMARIZE")
+                .build();
+        interactionRepository.save(interaction);
         user.setDailyAiLimit(user.getDailyAiLimit() - 1);
         userRepository.save(user);
 
-        return SummarizeOutDTO.builder()
+        return SummarizeResponse.builder()
                 .summary(cleanSummary)
                 .remainingDailyUses(user.getDailyAiLimit())
                 .build();
@@ -106,9 +115,9 @@ public class SummarizeService {
     private Map<String, Object> initializePrompt(String text, String url) {
         String prompt = """
                 You are an assistant specialized in summarizing and simplifying texts.
-
+                
                 Your task is to transform long texts into shorter, clearer, and easier-to-understand versions without losing the important information.
-
+                
                 Rules:
                 Reduce the length of the text while keeping the main ideas but not much.
                 Do not remove important data, dates, names, numbers, or key concepts.
@@ -119,10 +128,10 @@ public class SummarizeService {
                 Keep a neutral, informative, and professional tone.
                 If the original text is confusing, summarize the main idea as clearly as possible.
                 Return only the summarized text, without extra explanations.
-
+                
                 Text:
                 %s
-
+                
                 Article URL:
                 %s
                 """.formatted(text, url);
