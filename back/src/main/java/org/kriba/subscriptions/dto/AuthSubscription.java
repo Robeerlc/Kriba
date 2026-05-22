@@ -1,7 +1,8 @@
 package org.kriba.subscriptions.dto;
 
-import org.kriba.users.dto.LoginRequest;
 import lombok.Builder;
+import org.kriba.users.dto.LoginRequest;
 
 @Builder
-public record AuthSubscription(LoginRequest loginRequest, String externalSourceId, String sourceName) {}
+public record AuthSubscription(LoginRequest loginRequest, String externalSourceId, String sourceName) {
+}

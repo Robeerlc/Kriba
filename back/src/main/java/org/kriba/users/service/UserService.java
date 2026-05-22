@@ -1,6 +1,8 @@
 package org.kriba.users.service;
 
-import org.kriba.users.dto.*;
+import org.kriba.users.dto.AuthResponse;
+import org.kriba.users.dto.LoginRequest;
+import org.kriba.users.dto.RegisterRequest;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +20,8 @@ public class UserService {
     }
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent()) throw new IllegalArgumentException("El email ya está registrado en Kriba");
+        if (userRepository.findByEmail(request.email()).isPresent())
+            throw new IllegalArgumentException("El email ya está registrado en Kriba");
 
         User user = User.builder()
                 .username(request.username())
@@ -38,7 +41,8 @@ public class UserService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) throw new IllegalArgumentException("Contraseña incorrecta");
+        if (!passwordEncoder.matches(request.password(), user.getPassword()))
+            throw new IllegalArgumentException("Contraseña incorrecta");
 
         return AuthResponse.builder()
                 .userId(user.getId())

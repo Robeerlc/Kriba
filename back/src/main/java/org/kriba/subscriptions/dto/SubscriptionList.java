@@ -1,9 +1,11 @@
 package org.kriba.subscriptions.dto;
 
-import java.util.List;
 import lombok.Builder;
+
+import java.util.List;
 
 @Builder
 public record SubscriptionList(
-    List<SubscriptionResponse> subscriptions
-) {}
+        List<SubscriptionResponse> subscriptions
+) {
+}

@@ -51,6 +51,7 @@ public class SaveNewsService {
                         .description(savedArticle.getDescription())
                         .content(savedArticle.getContent())
                         .image(savedArticle.getImage())
+                        .timeStamp(savedArticle.getTimeStamp())
                         .build())
                 .toList();
     }

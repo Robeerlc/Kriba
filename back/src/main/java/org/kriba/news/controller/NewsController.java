@@ -5,7 +5,10 @@ import org.kriba.news.dto.NewsTotalArticles;
 import org.kriba.news.service.NewsInfoService;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
@@ -28,8 +31,8 @@ public class NewsController {
         }
 
         String category = request != null ? request.category() : null;
-        if (category != null && !category.isEmpty()) 
-        	return ResponseEntity.ok(newsService.getNewsByCategory(category, 20));
+        if (category != null && !category.isEmpty())
+            return ResponseEntity.ok(newsService.getNewsByCategory(category, 20));
 
         return ResponseEntity.ok(newsService.getGeneralFeed(currentUserId));
     }

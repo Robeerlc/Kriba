@@ -17,30 +17,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/api/v1/subscriptions")
 public class SubscriptionController {
 
-	private final SubscriptionsService subscriptionService;
-	private final UserService userService;
+    private final SubscriptionsService subscriptionService;
+    private final UserService userService;
 
-	public SubscriptionController(SubscriptionsService subscriptionService, UserService userService) {
-		this.subscriptionService = subscriptionService;
-		this.userService = userService;
-	}
+    public SubscriptionController(SubscriptionsService subscriptionService, UserService userService) {
+        this.subscriptionService = subscriptionService;
+        this.userService = userService;
+    }
 
-	@PostMapping
-	public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request) {
-		if (request == null || request.loginRequest() == null) {
-			return ResponseEntity.badRequest().build();
-		}
-		AuthResponse authResponse = userService.login(request.loginRequest());
-		subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
-		return ResponseEntity.status(HttpStatus.CREATED).build();
-	}
+    @PostMapping
+    public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request) {
+        if (request == null || request.loginRequest() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        AuthResponse authResponse = userService.login(request.loginRequest());
+        subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
-	@PostMapping("/list")
-	public ResponseEntity<SubscriptionList> listSubscriptions(@RequestBody LoginRequest request) {
-		if (request == null) {
-			return ResponseEntity.badRequest().build();
-		}
-		AuthResponse authResponse = userService.login(request);
-		return ResponseEntity.ok(subscriptionService.getSubscriptions(authResponse.userId()));
-	}
+    @PostMapping("/list")
+    public ResponseEntity<SubscriptionList> listSubscriptions(@RequestBody LoginRequest request) {
+        if (request == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        AuthResponse authResponse = userService.login(request);
+        return ResponseEntity.ok(subscriptionService.getSubscriptions(authResponse.userId()));
+    }
 }

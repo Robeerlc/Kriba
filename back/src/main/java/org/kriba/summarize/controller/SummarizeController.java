@@ -1,7 +1,7 @@
 package org.kriba.summarize.controller;
 
-import org.kriba.summarize.dto.SummarizeResponse;
 import org.kriba.summarize.dto.SummarizeRequest;
+import org.kriba.summarize.dto.SummarizeResponse;
 import org.kriba.summarize.service.SummarizeService;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.service.UserService;
