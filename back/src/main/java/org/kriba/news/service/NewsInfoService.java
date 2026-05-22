@@ -47,10 +47,10 @@ public class NewsInfoService {
         Map<String, Long> userPointsMap = new HashMap<>();
 
         if (userId != null) {
-            List<Object[]> interactions = interactionRepository.countCategoriesByUserId(userId);
-            for (Object[] row : interactions) {
-                String cat = (String) row[0];
-                long points = ((Number) row[1]).longValue();
+            List<InteractionRepository.CategoryStats> interactions = interactionRepository.getCategoryStatsByUserId(userId);
+            for (InteractionRepository.CategoryStats stat : interactions) {
+                String cat = stat.getCategory();
+                long points = stat.getPoints();
                 userPointsMap.put(cat, points);
                 totalPoints += points;
             }
