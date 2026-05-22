@@ -15,7 +15,11 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
         Long getArticlesRead();
     }
 
-    @Query("SELECT i.articleCategory as category, " + "SUM(CASE WHEN i.interactionType = 'SAVE' THEN 3 " + "         WHEN i.interactionType = 'SUMMARIZE' THEN 2 " + "         ELSE 1 END) as points, " +
-            "SUM(CASE WHEN i.interactionType = 'CLICK' THEN 1 ELSE 0 END) as articlesRead " + "FROM Interaction i WHERE i.userId = :userId GROUP BY i.articleCategory")
+    @Query("SELECT i.articleCategory as category, "
+            + "SUM(CASE WHEN i.interactionType = 'SAVE' THEN 3 "
+            + " WHEN i.interactionType = 'SUMMARIZE' THEN 2 "
+            + " ELSE 1 END) as points, "
+            + "SUM(CASE WHEN i.interactionType = 'CLICK' THEN 1 ELSE 0 END) as articlesRead "
+            + "FROM Interaction i WHERE i.userId = :userId GROUP BY i.articleCategory")
     List<CategoryStats> getCategoryStatsByUserId(@Param("userId") Long userId);
 }
