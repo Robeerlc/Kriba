@@ -27,7 +27,16 @@ public class SavedArticle {
     private String title;
 
     @Column(nullable = false)
+    private String description;
+
+    @Column(nullable = false)
+    private String content;
+
+    @Column(nullable = false)
     private String url;
+
+    @Column(nullable = false)
+    private String image;
 
     @Column(nullable = false)
     @Builder.Default
