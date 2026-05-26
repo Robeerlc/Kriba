@@ -1,5 +1,9 @@
 package org.kriba.news.service;
 
+import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.news.dto.NewsInfo;
 import org.kriba.news.dto.NewsTotalArticles;
@@ -7,34 +11,32 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class NewsInfoService {
-
     private final String apiKey;
     private final RestClient restClient;
     private final InteractionRepository interactionRepository;
 
+
     public NewsInfoService(@Value("${apiKey}") String apiKey, InteractionRepository interactionRepository) {
         this.apiKey = apiKey;
         this.interactionRepository = interactionRepository;
-        this.restClient = RestClient.builder()
-                .baseUrl("https://gnews.io/api/v4")
-                .build();
+        this.restClient = RestClient.builder().baseUrl("https://gnews.io/api/v4").build();
     }
 
+    @SneakyThrows
     public NewsTotalArticles getNewsByCategory(String category, int maxArticles) {
-        NewsTotalArticles response = restClient.get()
-                .uri("/top-headlines?lang=es&country=es&category=" + category + "&max=" + maxArticles + "&apikey=" + apiKey)
-                .retrieve()
-                .body(NewsTotalArticles.class);
+        NewsTotalArticles response = restClient.get().uri("/top-headlines?lang=es&country=es&category=" + category + "&max=" + maxArticles + "&apikey=" + apiKey).retrieve().body(NewsTotalArticles.class);
         if (response != null && response.articles() != null) {
             response.articles().forEach(article -> article.setCategory(category));
+            response.articles().forEach(this::scrapFullText);
         }
         return response != null ? response : new NewsTotalArticles(0L, Collections.emptyList());
     }
-
 
     public NewsTotalArticles getGeneralFeed(Long userId) {
         List<String> allCategories = List.of("general", "world", "nation", "business", "technology", "entertainment", "sports", "science", "health");
@@ -81,5 +83,21 @@ public class NewsInfoService {
 
         Collections.shuffle(allArticles);
         return new NewsTotalArticles(granTotalGNews, allArticles);
+    }
+
+    public void scrapFullText(NewsInfo article) throws IOException {
+
+                Document doc = Jsoup.connect(article.getUrl())
+                        .userAgent("Mozilla/5.0")
+                        .timeout(10000)
+                        .get();
+                String text = doc.select("article p, main p, [class*=article] p, [class*=content] p, [class*=body] p, p")
+                        .stream()
+                        .map(Element::text)
+                        .filter(p -> p.length() > 40)
+                        .distinct()
+                        .collect(Collectors.joining("\n"));
+                if (text.length() > 500) article.setContent(text);
+
     }
 }
