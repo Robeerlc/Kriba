@@ -26,9 +26,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneralException() {
+    public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Error interno del servidor. Por favor, inténtalo más tarde.");
+        response.put("error", "Error interno del servidor. Por favor, inténtalo más tarde." + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

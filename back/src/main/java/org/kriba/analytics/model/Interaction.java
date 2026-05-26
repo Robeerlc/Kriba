@@ -19,6 +19,9 @@ public class Interaction {
 
     @Column(nullable = false)
     private Long userId;
+    
+    @Column(nullable = false)
+    private String externalArticleId;
 
     @Column(nullable = false)
     private String articleCategory;
