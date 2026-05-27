@@ -1,5 +1,6 @@
 package org.kriba.analytics.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.analytics.dto.InteractionRequest;
 import org.kriba.analytics.model.Interaction;
 import org.kriba.analytics.repository.InteractionRepository;
@@ -24,12 +25,12 @@ public class InteractionController {
     }
 
     @PostMapping("/interactions")
-    public ResponseEntity<Void> saveInteraction(@RequestBody InteractionRequest request) {
+    public ResponseEntity<Void> saveInteraction(@Valid @RequestBody InteractionRequest request) {
         AuthResponse authUser = userService.login(request.loginRequest());
-
         Interaction interaction = Interaction.builder()
                 .userId(authUser.userId())
                 .articleCategory(request.articleCategory())
+                .externalArticleId(request.externalArticleId())
                 .interactionType(request.interactionType())
                 .build();
         interactionRepository.save(interaction);

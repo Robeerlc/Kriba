@@ -1,5 +1,6 @@
 package org.kriba.users.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.dto.ModifyRequest;
@@ -32,7 +33,7 @@ public class AuthController {
 		return ResponseEntity.ok(userService.login(request));
 	}
 
-	@PostMapping("/modifyData")
+	@PostMapping("/update")
 	public ResponseEntity<ModifyResponse> modifyData(@RequestBody ModifyRequest request) {
 	    if (request == null || request.loginRequest() == null) {
 	        return ResponseEntity.badRequest().build();

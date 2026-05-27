@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InteractionRepository extends JpaRepository<Interaction, Long> {
 
@@ -16,6 +17,18 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
             + "SUM(CASE WHEN i.interactionType = 'CLICK' THEN 1 ELSE 0 END) as articlesRead "
             + "FROM Interaction i WHERE i.userId = :userId GROUP BY i.articleCategory")
     List<CategoryStats> getCategoryStatsByUserId(@Param("userId") Long userId);
+
+    boolean existsByUserIdAndExternalArticleIdAndInteractionType(
+            Long userId,
+            String externalArticleId,
+            String interactionType
+    );
+
+    Optional<Interaction> findByUserIdAndExternalArticleIdAndInteractionType(
+            Long userId,
+            String externalArticleId,
+            String interactionType
+    );
 
     interface CategoryStats {
         String getCategory();
