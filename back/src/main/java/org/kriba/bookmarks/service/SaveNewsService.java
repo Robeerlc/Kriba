@@ -8,7 +8,7 @@ import org.kriba.bookmarks.dto.ArticleResponse;
 import org.kriba.bookmarks.model.SavedArticle;
 import org.kriba.bookmarks.repository.SavedNewsRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -29,19 +29,30 @@ public class SaveNewsService {
                 .userId(userId)
                 .externalArticleId(savedNew.externalArticleId())
                 .title(savedNew.title())
+                .category(savedNew.category())
                 .url(savedNew.url())
                 .description(savedNew.description())
                 .content(savedNew.content())
                 .image(savedNew.image())
                 .build();
         savedNewsRepository.save(savedArticle);
+        if (!interactionRepository.existsByUserIdAndExternalArticleIdAndInteractionType(userId, savedNew.externalArticleId(), "SAVE")) {
+            Interaction interaction = Interaction.builder()
+                    .userId(userId)
+                    .externalArticleId(savedNew.externalArticleId())
+                    .articleCategory(savedNew.category())
+                    .interactionType("SAVE")
+                    .build();
+            interactionRepository.save(interaction);
+        }
+    }
 
-        Interaction interaction = Interaction.builder()
-                .userId(userId)
-                .articleCategory(savedNew.category())
-                .interactionType("SAVE")
-                .build();
-        interactionRepository.save(interaction);
+    @Transactional
+    public void unsave(Long userId, ArticleInput savedNew) {
+        savedNewsRepository.findByUserIdAndExternalArticleId(userId, savedNew.externalArticleId())
+                .ifPresent(savedNewsRepository::delete);
+        interactionRepository.findByUserIdAndExternalArticleIdAndInteractionType(userId, savedNew.externalArticleId(), "SAVE")
+                .ifPresent(interactionRepository::delete);
     }
 
     public List<ArticleResponse> getSavedNews(Long userId) {
@@ -50,6 +61,7 @@ public class SaveNewsService {
                         .id(savedArticle.getId())
                         .externalArticleId(savedArticle.getExternalArticleId())
                         .title(savedArticle.getTitle())
+                        .category(savedArticle.getCategory())
                         .url(savedArticle.getUrl())
                         .description(savedArticle.getDescription())
                         .content(savedArticle.getContent())

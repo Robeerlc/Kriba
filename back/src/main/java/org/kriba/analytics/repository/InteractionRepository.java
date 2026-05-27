@@ -4,8 +4,8 @@ import org.kriba.analytics.model.Interaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.util.List;
+import java.util.Optional;
 
 public interface InteractionRepository extends JpaRepository<Interaction, Long> {
 
@@ -24,4 +24,16 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
 
         Long getArticlesRead();
     }
+
+    boolean existsByUserIdAndExternalArticleIdAndInteractionType(
+            Long userId,
+            String externalArticleId,
+            String interactionType
+    );
+
+    Optional<Interaction> findByUserIdAndExternalArticleIdAndInteractionType(
+            Long userId,
+            String externalArticleId,
+            String interactionType
+    );
 }

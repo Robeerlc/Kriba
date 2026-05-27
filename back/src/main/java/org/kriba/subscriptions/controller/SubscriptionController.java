@@ -9,6 +9,7 @@ import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,13 @@ public class SubscriptionController {
         AuthResponse authResponse = userService.login(request.loginRequest());
         subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/unsubscribe")
+    public ResponseEntity<Void> unsubscribe(@Valid @RequestBody AuthSubscription request){
+        AuthResponse authResponse = userService.login(request.loginRequest());
+        subscriptionService.unsubscribe(authResponse.userId(), request.externalSourceId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/list")
