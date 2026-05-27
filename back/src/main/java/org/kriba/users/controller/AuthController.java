@@ -12,27 +12,30 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
 	private final UserService userService;
 
+	
 	public AuthController(UserService userService) {
 		this.userService = userService;
 	}
 
 	@PostMapping("/register")
-	public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
-		return ResponseEntity.ok(userService.register(request));
-	}
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(userService.register(request));
+    }
 
 	@PostMapping("/login")
-	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-		return ResponseEntity.ok(userService.login(request));
-	}
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(userService.login(request));
+    }
 
-	@PostMapping("/modifyData")
+	@PostMapping("/update")
 	public ResponseEntity<ModifyResponse> modifyData(@RequestBody ModifyRequest request) {
 	    if (request == null || request.loginRequest() == null) {
 	        return ResponseEntity.badRequest().build();
