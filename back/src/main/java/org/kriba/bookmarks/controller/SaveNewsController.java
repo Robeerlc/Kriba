@@ -41,8 +41,14 @@ public class SaveNewsController {
     @PostMapping("/list")
     public ResponseEntity<List<ArticleResponse>> getSavedNews(@RequestBody LoginRequest request) {
         if (request == null) return ResponseEntity.badRequest().build();
-
         AuthResponse authResponse = userService.login(request);
         return ResponseEntity.ok(saveNewsService.getSavedNews(authResponse.userId()));
+    }
+
+    @PostMapping("/unsave")
+    public ResponseEntity<Void> unsave(@Valid @RequestBody SaveRequest request) {
+        AuthResponse authResponse = userService.login(request.loginRequest());
+        saveNewsService.unsave(authResponse.userId(), request.savedNew());
+        return ResponseEntity.noContent().build(); 
     }
 }
