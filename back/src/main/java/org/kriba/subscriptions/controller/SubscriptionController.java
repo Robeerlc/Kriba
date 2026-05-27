@@ -37,15 +37,11 @@ public class SubscriptionController {
     }
 
     @PostMapping("/unsubscribe")
-    public ResponseEntity<Void> unsubscribe(@RequestBody AuthSubscription request){
-        if (request == null || request.loginRequest() == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<Void> unsubscribe(@Valid @RequestBody AuthSubscription request){
         AuthResponse authResponse = userService.login(request.loginRequest());
-        subscriptionService.unsubscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
-        return ResponseEntity.status(HttpStatus.NON_AUTHORITATIVE_INFORMATION).build();
+        subscriptionService.unsubscribe(authResponse.userId(), request.externalSourceId());
+        return ResponseEntity.noContent().build();
     }
-
 
     @PostMapping("/list")
     public ResponseEntity<SubscriptionList> listSubscriptions(@RequestBody LoginRequest request) {
