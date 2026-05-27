@@ -1,0 +1,20 @@
+# Eclipse
+.metadata/
+.settings/
+.project
+.classpath
+.factorypath
+# Gradle
+.gradle/
+build/
+# Java
+*.class
+# Logs
+*.log
+# Local config / secrets
+.env
+application-local.properties
+application-dev.properties
+# OS
+.DS_Store
+Thumbs.db
