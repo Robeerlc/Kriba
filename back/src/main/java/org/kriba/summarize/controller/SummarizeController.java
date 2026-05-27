@@ -1,5 +1,6 @@
 package org.kriba.summarize.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.summarize.dto.SummarizeRequest;
 import org.kriba.summarize.dto.SummarizeResponse;
 import org.kriba.summarize.service.SummarizeService;
@@ -23,10 +24,7 @@ public class SummarizeController {
     }
 
     @PostMapping()
-    public ResponseEntity<SummarizeResponse> summarize(@RequestBody SummarizeRequest request) {
-        if (request == null || request.loginRequest() == null || request.textContent() == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<SummarizeResponse> summarize(@Valid @RequestBody SummarizeRequest request) {
         AuthResponse authResponse = userService.login(request.loginRequest());
         return ResponseEntity.ok(summarizeService.summarize(authResponse.userId(), request.textContent(), request.articleUrl(), request.category()));
     }

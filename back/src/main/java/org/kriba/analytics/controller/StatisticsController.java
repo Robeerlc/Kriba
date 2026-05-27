@@ -1,5 +1,6 @@
 package org.kriba.analytics.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.analytics.dto.StatisticsResponse;
 import org.kriba.analytics.service.StatisticsService;
 import org.kriba.users.dto.AuthResponse;
@@ -24,8 +25,7 @@ public class StatisticsController {
     }
 
     @PostMapping
-    public ResponseEntity<StatisticsResponse> getStatistics(@RequestBody LoginRequest request) {
-        if (request == null) return ResponseEntity.badRequest().build();
+    public ResponseEntity<StatisticsResponse> getStatistics(@Valid @RequestBody LoginRequest request) {
         AuthResponse authUser = userService.login(request);
         return ResponseEntity.ok(statisticsService.getUserStatistics(authUser.userId()));
     }

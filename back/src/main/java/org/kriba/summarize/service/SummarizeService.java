@@ -3,6 +3,7 @@ package org.kriba.summarize.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.kriba.analytics.model.Interaction;
 import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.summarize.dto.SummarizeResponse;
@@ -43,14 +44,13 @@ public class SummarizeService {
         this.objectMapper = new ObjectMapper();
     }
 
+    @Transactional
     public SummarizeResponse summarize(Long currentUserId, String textContent, String articleUrl, String category) {
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException(""));
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        if (user.getDailyAiLimit() <= 0) {
+        if (user.getDailyAiLimit() <= 0)
             throw new IllegalArgumentException("No te quedan intentos restantes");
-        }
-
 
         String rawResponse = restClient.post()
                 .uri(uriBuilder -> uriBuilder
@@ -81,34 +81,27 @@ public class SummarizeService {
     private String extractTextFromGeminiResponse(String rawResponse) {
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
-
             JsonNode candidates = root.path("candidates");
-
-            if (!candidates.isArray() || candidates.isEmpty()) {
-                throw new IllegalArgumentException();
-            }
+            if (!candidates.isArray() || candidates.isEmpty())
+                throw new IllegalArgumentException("Respuesta inesperada de la IA de Gemini: Faltan los candidatos");
 
             JsonNode firstCandidate = candidates.get(0);
             JsonNode parts = firstCandidate
                     .path("content")
                     .path("parts");
 
-            if (!parts.isArray() || parts.isEmpty()) {
-                throw new IllegalArgumentException();
-            }
+            if (!parts.isArray() || parts.isEmpty())
+                throw new IllegalArgumentException("Respuesta inesperada de la IA de Gemini: Falta el contenido");
 
             String summary = parts.get(0)
                     .path("text")
                     .asText();
 
-            if (summary == null || summary.isBlank()) {
-                throw new IllegalArgumentException();
-            }
-
+            if (summary == null || summary.isBlank())
+                throw new IllegalArgumentException("Respuesta inesperada de la IA de Gemini: Texto vacío");
             return summary.trim();
-
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException("Error al procesar el JSON de la IA de Gemini", e);
         }
     }
 

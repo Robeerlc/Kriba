@@ -18,8 +18,7 @@ public class SubscriptionsService {
     }
 
     public void subscribe(long userId, String externalSourceId, String sourceName) {
-
-
+        if (subscriptionRepository.existsByUserIdAndExternalSourceId(userId, externalSourceId)) return;
         Subscription subscription = Subscription.builder()
                 .userId(userId)
                 .externalSourceId(externalSourceId)
@@ -29,9 +28,7 @@ public class SubscriptionsService {
     }
 
     public SubscriptionList getSubscriptions(long userId) {
-
         List<Subscription> subscriptions = subscriptionRepository.findAllByUserId(userId);
-
         return SubscriptionList.builder()
                 .subscriptions(subscriptions.stream().
                         map(s -> SubscriptionResponse.builder()
@@ -41,5 +38,4 @@ public class SubscriptionsService {
                         .toList())
                 .build();
     }
-
 }
