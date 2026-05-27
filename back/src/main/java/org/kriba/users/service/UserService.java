@@ -7,11 +7,14 @@ import org.kriba.users.dto.ModifyResponse;
 import org.kriba.users.dto.RegisterRequest;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 import java.util.List;
 
+
+import java.util.List;
 
 @Service
 public class UserService {

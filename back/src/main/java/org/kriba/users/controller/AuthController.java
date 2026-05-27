@@ -1,5 +1,6 @@
 package org.kriba.users.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.dto.ModifyRequest;

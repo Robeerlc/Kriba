@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface SavedNewsRepository extends JpaRepository<SavedArticle, Long> {
     List<SavedArticle> findAllByUserId(Long userid);
+
+    boolean existsByUserIdAndExternalArticleId(Long userId, String externalArticleId);
 }

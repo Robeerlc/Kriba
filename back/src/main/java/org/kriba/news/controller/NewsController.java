@@ -1,5 +1,6 @@
 package org.kriba.news.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.news.dto.FeedRequest;
 import org.kriba.news.dto.NewsTotalArticles;
 import org.kriba.news.service.NewsInfoService;
@@ -24,14 +25,13 @@ public class NewsController {
     }
 
     @PostMapping
-    public ResponseEntity<NewsTotalArticles> getFeed(@RequestBody FeedRequest request) {
+    public ResponseEntity<NewsTotalArticles> getFeed(@Valid @RequestBody FeedRequest request) {
         Long currentUserId = null;
-        if (request != null && request.loginRequest() != null) {
+        if (request.loginRequest() != null)
             currentUserId = userService.login(request.loginRequest()).userId();
-        }
 
-        String category = request != null ? request.category() : null;
-        if (category != null && !category.isEmpty())
+        String category = request.category();
+        if (category != null && !category.isBlank())
             return ResponseEntity.ok(newsService.getNewsByCategory(category, 20));
 
         return ResponseEntity.ok(newsService.getGeneralFeed(currentUserId));
