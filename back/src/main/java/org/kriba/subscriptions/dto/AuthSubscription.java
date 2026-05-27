@@ -4,5 +4,5 @@ import lombok.Builder;
 import org.kriba.users.dto.LoginRequest;
 
 @Builder
-public record AuthSubscription(LoginRequest loginRequest, String externalSourceId, String sourceName) {
-}
+public record AuthSubscription(LoginRequest loginRequest, String externalSourceId, String sourceName) {}
+
