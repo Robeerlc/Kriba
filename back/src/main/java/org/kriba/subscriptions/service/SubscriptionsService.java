@@ -31,6 +31,8 @@ public class SubscriptionsService {
 
     @Transactional
     public void unsubscribe(long userId, String externalSourceId) {
+        if (subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId).isEmpty())
+            throw new IllegalArgumentException("No estás suscrito a esta fuente");
         subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId)
                 .ifPresent(subscriptionRepository::delete);
     }

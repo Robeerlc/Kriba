@@ -49,9 +49,12 @@ public class SaveNewsService {
 
     @Transactional
     public void unsave(Long userId, String externalArticleId) {
-        if (savedNewsRepository.existsByUserIdAndExternalArticleId(userId, externalArticleId)) return;
+        if (!savedNewsRepository.existsByUserIdAndExternalArticleId(userId, externalArticleId))
+            throw new IllegalArgumentException("El artículo no está guardado");
         interactionRepository.findByUserIdAndExternalArticleIdAndInteractionType(userId, externalArticleId, "SAVE")
                 .ifPresent(interactionRepository::delete);
+        savedNewsRepository.findByUserIdAndExternalArticleId(userId, externalArticleId)
+                .ifPresent(savedNewsRepository::delete);
     }
 
     public List<ArticleResponse> getSavedNews(Long userId) {
