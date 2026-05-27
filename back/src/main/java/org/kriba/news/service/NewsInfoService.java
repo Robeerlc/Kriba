@@ -1,6 +1,5 @@
 package org.kriba.news.service;
 
-import lombok.SneakyThrows;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -89,14 +87,14 @@ public class NewsInfoService {
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
                     .timeout(5000)
                     .get();
-                    
+
             String text = doc.select("article p, main p, [class*=article] p, [class*=content] p, [class*=body] p, p")
                     .stream()
                     .map(Element::text)
                     .filter(p -> p.length() > 40)
                     .distinct()
                     .collect(Collectors.joining("\n\n"));
-                
+
             if (text.length() > 500) article.setContent(text);
         } catch (Exception ex) {
             System.err.println("No se pudo coger el texto de: " + article.getUrl());
