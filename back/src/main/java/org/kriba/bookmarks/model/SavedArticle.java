@@ -26,6 +26,9 @@ public class SavedArticle {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false)
+    private String category;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 

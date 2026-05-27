@@ -9,6 +9,7 @@ import org.kriba.bookmarks.repository.SavedNewsRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class SaveNewsService {
@@ -22,10 +23,24 @@ public class SaveNewsService {
     }
 
     public void saveNew(Long userId, ArticleInput savedNew) {
-        SavedArticle savedArticle = SavedArticle.builder()
+        if (savedNewsRepository.findByUserIdAndExternalArticleIdAndTitleAndCategoryAndDescriptionAndContentAndUrlAndImage(
+                        userId,
+                        savedNew.externalArticleId(),
+                        savedNew.title(),
+                        savedNew.category(),
+                        savedNew.description(),
+                        savedNew.content(),
+                        savedNew.url(),
+                        savedNew.image())
+                .isPresent()) {
+            throw new IllegalArgumentException("Artículo ya guardado");
+        }
+        SavedArticle savedArticle = SavedArticle
+                .builder()
                 .userId(userId)
                 .externalArticleId(savedNew.externalArticleId())
                 .title(savedNew.title())
+                .category(savedNew.category())
                 .url(savedNew.url())
                 .description(savedNew.description())
                 .content(savedNew.content())
@@ -33,26 +48,55 @@ public class SaveNewsService {
                 .build();
         savedNewsRepository.save(savedArticle);
 
-        Interaction interaction = Interaction.builder()
+        if (interactionRepository.existsByUserIdAndExternalArticleIdAndInteractionType(
+                userId,
+                savedNew.externalArticleId(),
+                "SAVE")) {
+            throw new IllegalArgumentException("La interacción ya existe");
+        }
+        Interaction interaction = Interaction
+                .builder()
                 .userId(userId)
+                .externalArticleId(savedNew.externalArticleId())
                 .articleCategory(savedNew.category())
                 .interactionType("SAVE")
                 .build();
         interactionRepository.save(interaction);
     }
 
+    public void unsave(Long userId, ArticleInput savedNew) {
+        SavedArticle savedArticle = savedNewsRepository
+                .findByUserIdAndExternalArticleIdAndTitleAndCategoryAndDescriptionAndContentAndUrlAndImage(
+                        userId,
+                        savedNew.externalArticleId(),
+                        savedNew.title(),
+                        savedNew.category(),
+                        savedNew.description(),
+                        savedNew.content(),
+                        savedNew.url(),
+                        savedNew.image())
+                .orElseThrow(() -> new NoSuchElementException("Artículo no guardado"));
+        savedNewsRepository.delete(savedArticle);
+
+        Interaction interaction = interactionRepository
+                .findByUserIdAndExternalArticleIdAndInteractionType(
+                        userId,
+                        savedNew.externalArticleId(),
+                        "SAVE")
+                .orElseThrow(() -> new NoSuchElementException("Interacción no encontrada"));
+        interactionRepository.delete(interaction);
+    }
+
     public List<ArticleResponse> getSavedNews(Long userId) {
         return savedNewsRepository.findAllByUserId(userId).stream()
-                .map(savedArticle -> ArticleResponse.builder()
-                        .id(savedArticle.getId())
+                .map(savedArticle -> ArticleResponse.builder().id(savedArticle.getId())
                         .externalArticleId(savedArticle.getExternalArticleId())
                         .title(savedArticle.getTitle())
+                        .category(savedArticle.getCategory())
                         .url(savedArticle.getUrl())
                         .description(savedArticle.getDescription())
-                        .content(savedArticle.getContent())
-                        .image(savedArticle.getImage())
-                        .timeStamp(savedArticle.getTimeStamp())
-                        .build())
+                        .content(savedArticle.getContent()).image(savedArticle.getImage())
+                        .timeStamp(savedArticle.getTimeStamp()).build())
                 .toList();
     }
 }

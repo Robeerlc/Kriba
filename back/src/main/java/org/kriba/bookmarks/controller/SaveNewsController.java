@@ -45,4 +45,15 @@ public class SaveNewsController {
         AuthResponse authResponse = userService.login(request);
         return ResponseEntity.ok(saveNewsService.getSavedNews(authResponse.userId()));
     }
+
+    @PostMapping("/unsave")
+    public ResponseEntity<Void> unsave(@RequestBody SaveRequest request) {
+        if (request == null || request.loginRequest() == null || request.savedNew() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        AuthResponse authResponse = userService.login(request.loginRequest());
+        saveNewsService.unsave(authResponse.userId(), request.savedNew());
+
+        return ResponseEntity.status(HttpStatus.NON_AUTHORITATIVE_INFORMATION).build();
+    }
 }
