@@ -5,6 +5,7 @@ import org.kriba.subscriptions.dto.SubscriptionResponse;
 import org.kriba.subscriptions.model.Subscription;
 import org.kriba.subscriptions.repository.SubscriptionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,9 +18,9 @@ public class SubscriptionsService {
         this.subscriptionRepository = subscriptionRepository;
     }
 
+    @Transactional
     public void subscribe(long userId, String externalSourceId, String sourceName) {
-
-
+        if (subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId).isPresent()) return;
         Subscription subscription = Subscription.builder()
                 .userId(userId)
                 .externalSourceId(externalSourceId)
@@ -28,18 +29,21 @@ public class SubscriptionsService {
         subscriptionRepository.save(subscription);
     }
 
+    @Transactional
+    public void unsubscribe(long userId, String externalSourceId) {
+        subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId)
+                .ifPresent(subscriptionRepository::delete);
+    }
+
     public SubscriptionList getSubscriptions(long userId) {
-
         List<Subscription> subscriptions = subscriptionRepository.findAllByUserId(userId);
-
         return SubscriptionList.builder()
-                .subscriptions(subscriptions.stream().
-                        map(s -> SubscriptionResponse.builder()
+                .subscriptions(subscriptions.stream()
+                        .map(s -> SubscriptionResponse.builder()
                                 .externalSourceId(s.getExternalSourceId())
                                 .sourceName(s.getSourceName())
                                 .build())
                         .toList())
                 .build();
     }
-
 }

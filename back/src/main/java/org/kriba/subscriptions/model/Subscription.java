@@ -24,3 +24,4 @@ public class Subscription {
     @Column(nullable = false)
     private String sourceName;
 }
+
