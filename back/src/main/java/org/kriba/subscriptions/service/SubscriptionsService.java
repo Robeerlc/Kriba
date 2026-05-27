@@ -5,9 +5,9 @@ import org.kriba.subscriptions.dto.SubscriptionResponse;
 import org.kriba.subscriptions.model.Subscription;
 import org.kriba.subscriptions.repository.SubscriptionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 public class SubscriptionsService {
@@ -18,25 +18,21 @@ public class SubscriptionsService {
         this.subscriptionRepository = subscriptionRepository;
     }
 
+    @Transactional
     public void subscribe(long userId, String externalSourceId, String sourceName) {
-
-        if (subscriptionRepository
-                .findByUserIdAndExternalSourceIdAndSourceName(userId, externalSourceId, sourceName)
-                .isPresent()) {
-            throw new IllegalArgumentException("Ya estás suscrito a esta fuente");
-        }
+        if (subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId).isPresent()) return;
         Subscription subscription = Subscription.builder()
                 .userId(userId)
                 .externalSourceId(externalSourceId)
-                .sourceName(sourceName).build();
+                .sourceName(sourceName)
+                .build();
         subscriptionRepository.save(subscription);
     }
 
-    public void unsubscribe(long userId, String externalSourceId, String sourceName) {
-        Subscription subscription = subscriptionRepository
-                .findByUserIdAndExternalSourceIdAndSourceName(userId, externalSourceId, sourceName)
-                .orElseThrow(() -> new NoSuchElementException("Suscripción no encontrada"));
-        subscriptionRepository.delete(subscription);
+    @Transactional
+    public void unsubscribe(long userId, String externalSourceId) {
+        subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId)
+                .ifPresent(subscriptionRepository::delete);
     }
 
     public SubscriptionList getSubscriptions(long userId) {
