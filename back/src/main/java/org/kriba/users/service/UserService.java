@@ -5,8 +5,11 @@ import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.dto.RegisterRequest;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserService {
@@ -49,5 +52,13 @@ public class UserService {
                 .username(user.getUsername())
                 .dailyAiLimit(user.getDailyAiLimit())
                 .build();
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    @org.springframework.transaction.annotation.Transactional
+    public void resetDailyAiLimits() {
+        List<User> allUsers = userRepository.findAll();
+        allUsers.forEach(user -> user.setDailyAiLimit(3));
+        userRepository.saveAll(allUsers);
     }
 }

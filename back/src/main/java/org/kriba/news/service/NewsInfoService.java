@@ -1,12 +1,16 @@
 package org.kriba.news.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.news.dto.NewsInfo;
 import org.kriba.news.dto.NewsTotalArticles;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -19,6 +23,9 @@ public class NewsInfoService {
     private final RestClient restClient;
     private final InteractionRepository interactionRepository;
 
+    @Autowired
+    @Lazy
+    private NewsInfoService selfProxy;
 
     public NewsInfoService(@Value("${apiKey}") String apiKey, InteractionRepository interactionRepository) {
         this.apiKey = apiKey;
@@ -26,8 +33,19 @@ public class NewsInfoService {
         this.restClient = RestClient.builder().baseUrl("https://gnews.io/api/v4").build();
     }
 
+    @Cacheable(value = "newsByCategory", key = "{#category, #maxArticles}")
+    @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallbackGetNewsByCategory")
     public NewsTotalArticles getNewsByCategory(String category, int maxArticles) {
-        NewsTotalArticles response = restClient.get().uri("/top-headlines?lang=es&country=es&category=" + category + "&max=" + maxArticles + "&apikey=" + apiKey).retrieve().body(NewsTotalArticles.class);
+        NewsTotalArticles response = restClient.get()
+                .uri("/top-headlines?lang=es&country=es&category=" + category + "&max=" + maxArticles + "&apikey=" + apiKey)
+                .retrieve()
+                .body(NewsTotalArticles.class);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         if (response != null && response.articles() != null) {
             response.articles().forEach(article -> article.setCategory(category));
             response.articles().parallelStream().forEach(this::scrapFullText);
@@ -66,15 +84,10 @@ public class NewsInfoService {
                 amountToFetch = totalArticles / allCategories.size();
             }
 
-            try {
-                NewsTotalArticles response = getNewsByCategory(cat, amountToFetch);
-                if (response != null) {
-                    if (response.totalArticles() != null) granTotalGNews += response.totalArticles();
-                    if (response.articles() != null) allArticles.addAll(response.articles());
-                }
-                Thread.sleep(1000);
-            } catch (Exception ex) {
-                System.err.println("Error al cargar la categoría " + cat + ": " + ex.getMessage());
+            NewsTotalArticles response = selfProxy.getNewsByCategory(cat, amountToFetch);
+            if (response != null) {
+                if (response.totalArticles() != null) granTotalGNews += response.totalArticles();
+                if (response.articles() != null) allArticles.addAll(response.articles());
             }
         }
         Collections.shuffle(allArticles);
@@ -99,5 +112,10 @@ public class NewsInfoService {
         } catch (Exception ex) {
             System.err.println("No se pudo coger el texto de: " + article.getUrl());
         }
+    }
+
+    public NewsTotalArticles fallbackGetNewsByCategory(String category, int maxArticles, Throwable t) {
+        System.err.println("Circuit Breaker activado para categoría " + category + " - Motivo: " + t.getMessage());
+        return new NewsTotalArticles(0L, Collections.emptyList());
     }
 }

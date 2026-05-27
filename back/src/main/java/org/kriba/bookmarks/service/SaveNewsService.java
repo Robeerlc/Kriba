@@ -1,5 +1,6 @@
 package org.kriba.bookmarks.service;
 
+import jakarta.transaction.Transactional;
 import org.kriba.analytics.model.Interaction;
 import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.bookmarks.dto.ArticleInput;
@@ -23,8 +24,7 @@ public class SaveNewsService {
 
     @Transactional
     public void saveNew(Long userId, ArticleInput savedNew) {
-        if (savedNewsRepository.findByUserIdAndExternalArticleId(userId, savedNew.externalArticleId()).isPresent()) return;
-        
+        if (savedNewsRepository.existsByUserIdAndExternalArticleId(userId, savedNew.externalArticleId())) return;
         SavedArticle savedArticle = SavedArticle.builder()
                 .userId(userId)
                 .externalArticleId(savedNew.externalArticleId())

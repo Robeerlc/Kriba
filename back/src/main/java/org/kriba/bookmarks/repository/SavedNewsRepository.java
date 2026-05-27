@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface SavedNewsRepository extends JpaRepository<SavedArticle, Long> {
     List<SavedArticle> findAllByUserId(Long userid);
-    Optional<SavedArticle> findByUserIdAndExternalArticleId(Long userId, String externalArticleId);
+
+    boolean existsByUserIdAndExternalArticleId(Long userId, String externalArticleId);
 }

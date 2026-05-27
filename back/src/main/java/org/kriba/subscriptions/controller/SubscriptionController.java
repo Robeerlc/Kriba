@@ -1,5 +1,6 @@
 package org.kriba.subscriptions.controller;
 
+import jakarta.validation.Valid;
 import org.kriba.subscriptions.dto.AuthSubscription;
 import org.kriba.subscriptions.dto.SubscriptionList;
 import org.kriba.subscriptions.service.SubscriptionsService;
@@ -27,10 +28,7 @@ public class SubscriptionController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> subscribe(@RequestBody AuthSubscription request) {
-        if (request == null || request.loginRequest() == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<Void> subscribe(@Valid @RequestBody AuthSubscription request) {
         AuthResponse authResponse = userService.login(request.loginRequest());
         subscriptionService.subscribe(authResponse.userId(), request.externalSourceId(), request.sourceName());
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -44,10 +42,7 @@ public class SubscriptionController {
     }
 
     @PostMapping("/list")
-    public ResponseEntity<SubscriptionList> listSubscriptions(@RequestBody LoginRequest request) {
-        if (request == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<SubscriptionList> listSubscriptions(@Valid @RequestBody LoginRequest request) {
         AuthResponse authResponse = userService.login(request);
         return ResponseEntity.ok(subscriptionService.getSubscriptions(authResponse.userId()));
     }

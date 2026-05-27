@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
     List<Subscription> findAllByUserId(long userId);
-    Optional<Subscription> findByUserIdAndExternalSourceId(long userId, String externalSourceId);
+
+    boolean existsByUserIdAndExternalSourceId(Long userId, String externalSourceId);
 }

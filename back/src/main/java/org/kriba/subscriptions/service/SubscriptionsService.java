@@ -20,19 +20,13 @@ public class SubscriptionsService {
 
     @Transactional
     public void subscribe(long userId, String externalSourceId, String sourceName) {
-        if (subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId).isPresent()) return;
+        if (subscriptionRepository.existsByUserIdAndExternalSourceId(userId, externalSourceId)) return;
         Subscription subscription = Subscription.builder()
                 .userId(userId)
                 .externalSourceId(externalSourceId)
                 .sourceName(sourceName)
                 .build();
         subscriptionRepository.save(subscription);
-    }
-
-    @Transactional
-    public void unsubscribe(long userId, String externalSourceId) {
-        subscriptionRepository.findByUserIdAndExternalSourceId(userId, externalSourceId)
-                .ifPresent(subscriptionRepository::delete);
     }
 
     public SubscriptionList getSubscriptions(long userId) {
