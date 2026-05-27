@@ -13,5 +13,7 @@ public record SummarizeRequest(
 
         @NotBlank(message = "La URL del articulo es obligatoria") @Size(max = 1000, message = "La URL del articulo no puede superar los 1000 caracteres") String articleUrl,
 
+        @NotBlank(message = "El id externo del articulo es obligatorio") String externalArticleId,
+
         @NotBlank(message = "La categoria es obligatoria") @Size(max = 30, message = "La categoria no puede superar los 30 caracteres") String category) {
 }

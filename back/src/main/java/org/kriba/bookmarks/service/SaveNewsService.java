@@ -1,6 +1,5 @@
 package org.kriba.bookmarks.service;
 
-import jakarta.transaction.Transactional;
 import org.kriba.analytics.model.Interaction;
 import org.kriba.analytics.repository.InteractionRepository;
 import org.kriba.bookmarks.dto.ArticleInput;
@@ -9,6 +8,7 @@ import org.kriba.bookmarks.model.SavedArticle;
 import org.kriba.bookmarks.repository.SavedNewsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -48,10 +48,9 @@ public class SaveNewsService {
     }
 
     @Transactional
-    public void unsave(Long userId, ArticleInput savedNew) {
-        savedNewsRepository.findByUserIdAndExternalArticleId(userId, savedNew.externalArticleId())
-                .ifPresent(savedNewsRepository::delete);
-        interactionRepository.findByUserIdAndExternalArticleIdAndInteractionType(userId, savedNew.externalArticleId(), "SAVE")
+    public void unsave(Long userId, String externalArticleId) {
+        if (savedNewsRepository.existsByUserIdAndExternalArticleId(userId, externalArticleId)) return;
+        interactionRepository.findByUserIdAndExternalArticleIdAndInteractionType(userId, externalArticleId, "SAVE")
                 .ifPresent(interactionRepository::delete);
     }
 

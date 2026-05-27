@@ -3,6 +3,7 @@ package org.kriba.bookmarks.controller;
 import jakarta.validation.Valid;
 import org.kriba.bookmarks.dto.ArticleResponse;
 import org.kriba.bookmarks.dto.SaveRequest;
+import org.kriba.bookmarks.dto.UnsaveRequest;
 import org.kriba.bookmarks.service.SaveNewsService;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.dto.LoginRequest;
@@ -28,7 +29,7 @@ public class SaveNewsController {
         this.userService = userService;
     }
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<Void> saveNew(@Valid @RequestBody SaveRequest request) {
         AuthResponse authResponse = userService.login(request.loginRequest());
         saveNewsService.saveNew(authResponse.userId(), request.savedNew());
@@ -43,9 +44,9 @@ public class SaveNewsController {
     }
 
     @PostMapping("/unsave")
-    public ResponseEntity<Void> unsave(@Valid @RequestBody SaveRequest request) {
+    public ResponseEntity<Void> unsave(@Valid @RequestBody UnsaveRequest request) {
         AuthResponse authResponse = userService.login(request.loginRequest());
-        saveNewsService.unsave(authResponse.userId(), request.savedNew());
-        return ResponseEntity.noContent().build(); 
+        saveNewsService.unsave(authResponse.userId(), request.externalArticleId());
+        return ResponseEntity.noContent().build();
     }
 }

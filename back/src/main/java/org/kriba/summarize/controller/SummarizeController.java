@@ -26,6 +26,6 @@ public class SummarizeController {
     @PostMapping()
     public ResponseEntity<SummarizeResponse> summarize(@Valid @RequestBody SummarizeRequest request) {
         AuthResponse authResponse = userService.login(request.loginRequest());
-        return ResponseEntity.ok(summarizeService.summarize(authResponse.userId(), request.textContent(), request.articleUrl(), request.category()));
+        return ResponseEntity.ok(summarizeService.summarize(authResponse.userId(), request.textContent(), request.articleUrl(), request.category(), request.externalArticleId()));
     }
 }

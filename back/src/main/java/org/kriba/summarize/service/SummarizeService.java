@@ -45,7 +45,7 @@ public class SummarizeService {
     }
 
     @Transactional
-    public SummarizeResponse summarize(Long currentUserId, String textContent, String articleUrl, String category) {
+    public SummarizeResponse summarize(Long currentUserId, String textContent, String articleUrl, String category, String externalArticleId) {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -66,6 +66,7 @@ public class SummarizeService {
         Interaction interaction = Interaction.builder()
                 .userId(currentUserId)
                 .articleCategory(category)
+                .externalArticleId(externalArticleId)
                 .interactionType("SUMMARIZE")
                 .build();
         interactionRepository.save(interaction);

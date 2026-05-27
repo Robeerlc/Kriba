@@ -30,6 +30,7 @@ public class InteractionController {
         Interaction interaction = Interaction.builder()
                 .userId(authUser.userId())
                 .articleCategory(request.articleCategory())
+                .externalArticleId(request.externalArticleId())
                 .interactionType(request.interactionType())
                 .build();
         interactionRepository.save(interaction);
