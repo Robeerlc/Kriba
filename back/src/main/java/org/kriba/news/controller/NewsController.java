@@ -3,7 +3,6 @@ package org.kriba.news.controller;
 import jakarta.validation.Valid;
 import org.kriba.news.dto.FeedRequest;
 import org.kriba.news.dto.NewsInfo;
-import org.kriba.news.dto.NewsTotalArticles;
 import org.kriba.news.service.NewsInfoService;
 import org.kriba.users.service.UserService;
 import org.springframework.data.domain.Page;
@@ -28,7 +27,7 @@ public class NewsController {
         this.userService = userService;
     }
 
-    @PostMapping
+    @PostMapping("/scroll")
     public ResponseEntity<Page<NewsInfo>> getFeed(@Valid @RequestBody FeedRequest request) {
         Long currentUserId = null;
         if (request.loginRequest() != null)
@@ -39,11 +38,19 @@ public class NewsController {
 
         Pageable pageable = PageRequest.of(pageNo, pageSize);
 
-        String category = request.category();
+        return ResponseEntity.ok(newsService.scrollFeed(currentUserId,request.category(),pageable));
+    }
+    @PostMapping("/refresh")
+    public ResponseEntity<Page<NewsInfo>> refreshFeed(@Valid@RequestBody FeedRequest request){
+        Long currentUserId = null;
+        if (request.loginRequest() != null)
+            currentUserId = userService.login(request.loginRequest()).userId();
 
-        if (category != null && !category.isBlank())
-            return ResponseEntity.ok(newsService.getNewsByCategory(category, pageable));
+        int pageNo = request.pageNo() != null ? request.pageNo() : 0;
+        int pageSize = request.pageSize() != null ? request.pageSize() : 10;
 
-        return ResponseEntity.ok(newsService.getGeneralFeed(currentUserId, pageable));
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+
+        return ResponseEntity.ok(newsService.refreshFeed(currentUserId,request.category(), pageable));
     }
 }
