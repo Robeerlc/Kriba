@@ -30,6 +30,8 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
             String interactionType
     );
 
+    void deleteAllByUserId(long userId);
+
     interface CategoryStats {
         String getCategory();
 
