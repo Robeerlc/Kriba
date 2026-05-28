@@ -4,6 +4,7 @@ import org.kriba.analytics.model.Interaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,14 +18,6 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
             + "FROM Interaction i WHERE i.userId = :userId GROUP BY i.articleCategory")
     List<CategoryStats> getCategoryStatsByUserId(@Param("userId") Long userId);
 
-    interface CategoryStats {
-        String getCategory();
-
-        Long getPoints();
-
-        Long getArticlesRead();
-    }
-
     boolean existsByUserIdAndExternalArticleIdAndInteractionType(
             Long userId,
             String externalArticleId,
@@ -36,4 +29,14 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
             String externalArticleId,
             String interactionType
     );
+
+    void deleteAllByUserId(long userId);
+
+    interface CategoryStats {
+        String getCategory();
+
+        Long getPoints();
+
+        Long getArticlesRead();
+    }
 }

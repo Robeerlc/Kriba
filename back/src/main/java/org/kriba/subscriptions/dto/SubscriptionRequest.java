@@ -7,7 +7,7 @@ import lombok.Builder;
 import org.kriba.users.dto.LoginRequest;
 
 @Builder
-public record AuthSubscription(
+public record SubscriptionRequest(
         @NotNull(message = "Los datos de autenticación son obligatorios") @Valid LoginRequest loginRequest,
         @NotBlank(message = "El id de la fuente es obligatorio") String externalSourceId,
         @NotBlank(message = "El nombre de la fuente es obligatorio") String sourceName) {
