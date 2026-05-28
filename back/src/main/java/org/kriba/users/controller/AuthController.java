@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import org.kriba.users.dto.AuthResponse;
 import org.kriba.users.dto.LoginRequest;
 import org.kriba.users.dto.ModifyRequest;
-import org.kriba.users.dto.ModifyResponse;
 import org.kriba.users.dto.RegisterRequest;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -37,11 +34,14 @@ public class AuthController {
     }
 
 	@PostMapping("/update")
-	public ResponseEntity<ModifyResponse> modifyData(@RequestBody ModifyRequest request) {
-	    if (request == null || request.loginRequest() == null) {
-	        return ResponseEntity.badRequest().build();
-	    }
+	public ResponseEntity<AuthResponse> modifyData(@Valid @RequestBody ModifyRequest request) {
 	    return ResponseEntity.ok(userService.modifyData(request));
+	}
+	
+	@PostMapping("(delete")
+	public ResponseEntity<Void> deleteAccount(@Valid @RequestBody LoginRequest request) {
+		userService.deleteAccount(request);
+	    return ResponseEntity.noContent().build();
 	}
 }
 
