@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,7 +26,8 @@ import java.util.stream.Collectors;
 @Service
 public class NewsInfoService {
 
-    private static final int DEFAULT_CATEGORY_MAX_ARTICLES = 10;
+    private static final int DEFAULT_CATEGORY_MAX_ARTICLES = 10
+            ;
     private static final int FEED_BATCH_SIZE = 20;
     private static final int MIN_ARTICLES_PER_CATEGORY = 2;
 
@@ -47,95 +47,77 @@ public class NewsInfoService {
         this.restClient = RestClient.builder().baseUrl("https://gnews.io/api/v4").build();
     }
 
-    public Page<NewsInfo> refreshFeed(Long userId, String category, Pageable pageable) {
-        String cacheKey = buildFeedCacheKey(userId, category);
+    public Page<NewsInfo> refreshFeed(Long userId, String category, Pageable pageable){
+        String cacheKey = buildFeedCacheKey(userId,category);
 
         FeedCache feedCache = getFeedCache(cacheKey);
         List<NewsInfo> cachedArticles = new ArrayList<>(feedCache.articles());
-        if (cachedArticles.isEmpty()) {
+        if(cachedArticles.isEmpty()){
             List<NewsInfo> initialBatch = cleanAndSortArticles(loadRecentBatch(userId, category, FEED_BATCH_SIZE));
-            saveFeedCache(cacheKey, initialBatch);
+            saveFeedCache(cacheKey,initialBatch);
             return paginate(initialBatch, pageable);
         }
 
-        List<NewsInfo> newBatch = loadNewerBatch(userId, category, FEED_BATCH_SIZE, feedCache.newestPublishedAt());
-        if (!newBatch.isEmpty()) {
+        List<NewsInfo> newBatch = loadNewerBatch(userId,category,FEED_BATCH_SIZE, feedCache.newestPublishedAt());
+        if(!newBatch.isEmpty()){
             return Page.empty(pageable);
         }
         cachedArticles.addAll(newBatch);
         cachedArticles = cleanAndSortArticles(cachedArticles);
-        saveFeedCache(cacheKey, cachedArticles);
+        saveFeedCache(cacheKey,cachedArticles);
 
         return paginate(cleanAndSortArticles(cachedArticles), pageable);
     }
 
-    public Page<NewsInfo> scrollFeed(Long userId, String category, Pageable pageable) {
-        String cacheKey = buildFeedCacheKey(userId, category);
+    public Page<NewsInfo> scrollFeed(Long userId,String category,Pageable pageable){
+        String cacheKey = buildFeedCacheKey(userId,category);
 
         FeedCache feedCache = getFeedCache(cacheKey);
         List<NewsInfo> articles = new ArrayList<>(feedCache.articles());
+        int pageSize = pageable.getPageSize();
+        int start;
 
-        if (pageable.getPageNumber() == 0 && feedCache.lastDeliveredPublishedAt() != null) {
-            List<NewsInfo> olderBath = loadOlderBatch(userId, category, FEED_BATCH_SIZE, feedCache.lastDeliveredPublishedAt());
-            List<NewsInfo> cleanOlderBatch = removeAlreadyCachedArticles(articles, olderBath);
-            if (cleanOlderBatch.isEmpty()) {
-                return Page.empty(pageable);
-            }
 
-            articles.addAll(cleanOlderBatch);
-            articles = cleanAndSortArticles(articles);
+        if(pageable.getPageNumber() == 0 && feedCache.lastDeliveredIndex() != null){
+            start = feedCache.lastDeliveredIndex() + 1;
+        }else{
+            start = (int) pageable.getOffset();
+        }
+        int requiredEnd = start + pageSize;
+        articles = getOrExpandCachedFeed(userId, category,cacheKey,requiredEnd);
 
-            List<NewsInfo> content = cleanOlderBatch.size() > pageable.getPageSize()
-                    ? cleanOlderBatch.subList(0, pageable.getPageSize()) : cleanOlderBatch;
-
-            String lastDeliveredPublishedAt = content.getLast().getPublishedAt();
-
-            saveFeedCache(cacheKey, articles, null, lastDeliveredPublishedAt);
-
-            return new PageImpl<>(content, pageable, content.size());
+        if(articles.isEmpty() || start >= articles.size()){
+            saveFeedCache(cacheKey, articles, feedCache.lastDeliveredIndex());
+            return Page.empty(pageable);
         }
 
-        int requiredEnd = (int) pageable.getOffset() + pageable.getPageSize();
+        int end = Math.min(requiredEnd, articles.size());
+        List<NewsInfo> content = articles.subList(start,end);
+        int newLastDeliveredIndex = end - 1;
+        saveFeedCache(cacheKey,articles,newLastDeliveredIndex);
 
-        articles = getOrExpandCachedFeed(userId, category, cacheKey, requiredEnd);
-
-        Page<NewsInfo> page = paginate(articles, pageable);
-
-        if (!page.getContent().isEmpty()) {
-            List<NewsInfo> content = page.getContent();
-            NewsInfo lastArticle = content.getLast();
-
-            saveFeedCache(
-                    cacheKey,
-                    articles,
-                    (int) pageable.getOffset() + content.size() - 1,
-                    lastArticle.getPublishedAt()
-            );
-        }
-
-        return page;
+        return new PageImpl<>(content,pageable,articles.size());
     }
-
-    public List<NewsInfo> getOrExpandCachedFeed(Long userId, String category, String cacheKey, int requiredEnd) {
+    public List<NewsInfo> getOrExpandCachedFeed(Long userId, String category, String cacheKey, int requiredEnd){
         FeedCache feedCache = getFeedCache(cacheKey);
         List<NewsInfo> expandedArticles = new ArrayList<>(feedCache.articles());
 
-        if (expandedArticles.size() >= requiredEnd) {
+        if(expandedArticles.size() >= requiredEnd){
             return expandedArticles;
         }
 
         String oldestPublishedAt = feedCache.oldestPublishedAt();
 
 
-        while (expandedArticles.size() < requiredEnd) {
+        while(expandedArticles.size() < requiredEnd){
             List<NewsInfo> newBatch;
-            if (expandedArticles.isEmpty()) newBatch = loadRecentBatch(userId, category, FEED_BATCH_SIZE);
+            if(expandedArticles.isEmpty())newBatch = loadRecentBatch(userId,category,FEED_BATCH_SIZE);
             else newBatch = loadOlderBatch(userId, category, FEED_BATCH_SIZE, oldestPublishedAt);
 
 
             List<NewsInfo> cleanNewBatch = removeAlreadyCachedArticles(expandedArticles, newBatch);
 
-            if (cleanNewBatch.isEmpty()) {
+            if(cleanNewBatch.isEmpty()){
                 break;
                 //Losiento x1
             }
@@ -146,27 +128,30 @@ public class NewsInfoService {
             oldestPublishedAt = findOldestPublishedAt(expandedArticles);
         }
         saveFeedCache(cacheKey, expandedArticles);
-        return expandedArticles;
+        return  expandedArticles;
+    }
+    //Estas tres son para cuando tu hagas la llamada a la API seran de tres tipos la llamada
+
+    //Para la gente que nunca habia inciado sesion osea la gente que no tiene ni el campo de fecha de publicacion mas antigua ni fecha de publicacion mas nueva
+    public List<NewsInfo> loadRecentBatch(Long userId, String category, int batchSize){
+        return buildFeedArticles(userId,category,batchSize,null,null);
+    }
+    //Para buscar las noticias mas antiguas que la ultima publicacion vista por el usuario
+    public List<NewsInfo> loadOlderBatch(Long userid, String category, int batchSize, String oldestPublishedAt){
+        return buildFeedArticles(userid, category,batchSize,null,oldestPublishedAt);
+    }
+    //Para buscar las mas nuevas
+    public List<NewsInfo> loadNewerBatch(Long userId, String category, int batchSize, String newestPublishedAt){
+        return buildFeedArticles(userId,category,batchSize,newestPublishedAt,null);
     }
 
-    public List<NewsInfo> loadRecentBatch(Long userId, String category, int batchSize) {
-        return buildFeedArticles(userId, category, batchSize, null, null);
-    }
-
-    public List<NewsInfo> loadOlderBatch(Long userid, String category, int batchSize, String oldestPublishedAt) {
-        return buildFeedArticles(userid, category, batchSize, null, oldestPublishedAt);
-    }
-
-    public List<NewsInfo> loadNewerBatch(Long userId, String category, int batchSize, String newestPublishedAt) {
-        return buildFeedArticles(userId, category, batchSize, newestPublishedAt, null);
-    }
-
-    public List<NewsInfo> buildFeedArticles(Long userId, String category, int batchSize, String fromDate, String toDate) {
-        if (category != null && !category.isBlank()) {
+    public List<NewsInfo> buildFeedArticles(Long userId,String category, int batchSize, String fromDate, String toDate){
+        if(category != null && !category.isBlank()){
             int maxArticles = Math.min(batchSize, DEFAULT_CATEGORY_MAX_ARTICLES);
-            NewsTotalArticles response = selfProxy.searchNewsFromGnews(category, maxArticles, fromDate, toDate, category);
+            String query = category;
+            NewsTotalArticles response = selfProxy.searchNewsFromGnews(query,maxArticles,fromDate,toDate,category);
 
-            if (response == null || response.articles() == null) {
+            if(response == null || response.articles() == null){
                 return Collections.emptyList();
             }
 
@@ -196,6 +181,7 @@ public class NewsInfoService {
             }
         }
 
+        long granTotalGNews = 0;
         for (String cat : allCategories) {
             int amountToFetch = MIN_ARTICLES_PER_CATEGORY;
             if (totalPoints > 0) {
@@ -206,8 +192,9 @@ public class NewsInfoService {
                 amountToFetch = batchSize / allCategories.size();
             }
 
-            NewsTotalArticles response = selfProxy.searchNewsFromGnews(cat, amountToFetch, fromDate, toDate, cat);
+            NewsTotalArticles response = selfProxy.searchNewsFromGnews(cat, amountToFetch,fromDate,toDate,cat);
             if (response != null) {
+                if (response.totalArticles() != null) granTotalGNews += response.totalArticles();
                 if (response.articles() != null) allArticles.addAll(response.articles());
             }
         }
@@ -215,24 +202,23 @@ public class NewsInfoService {
         return cleanAndSortArticles(allArticles);
     }
 
-    @Cacheable(value = "newsByCategory", key = "{#query, #maxArticles, #fromDate, #toDate}")
-    @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
-    public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, String fromDate, String toDate, String category) {
+    @CircuitBreaker(name= "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
+    public NewsTotalArticles searchNewsFromGnews(String query,int maxArticles, String fromDate,String toDate,String category){
         UriComponentsBuilder uriBuilder = UriComponentsBuilder
                 .fromPath("/search")
-                .queryParam("q", query)
-                .queryParam("lang", "es")
-                .queryParam("country", "es")
-                .queryParam("max", maxArticles)
-                .queryParam("sortby", "publishedAt")
-                .queryParam("apikey", apiKey);
+                .queryParam("q",query)
+                .queryParam("lang","es")
+                .queryParam("country","es")
+                .queryParam("max",maxArticles)
+                .queryParam("sortby","publishedAt")
+                .queryParam("apikey",apiKey);
 
-        if (fromDate != null && !fromDate.isBlank()) {
-            uriBuilder.queryParam("from", fromDate);
+        if(fromDate != null && !fromDate.isBlank()){
+            uriBuilder.queryParam("from",fromDate);
         }
 
-        if (toDate != null && !toDate.isBlank()) {
-            uriBuilder.queryParam("to", toDate);
+        if(toDate != null && !toDate.isBlank()){
+            uriBuilder.queryParam("to",toDate);
         }
 
         NewsTotalArticles response = restClient.get()
@@ -246,7 +232,7 @@ public class NewsInfoService {
             Thread.currentThread().interrupt();
         }
 
-        if (response != null && response.articles() != null) {
+        if(response != null && response.articles() != null){
             response.articles().forEach(article -> article.setCategory(category));
             response.articles().parallelStream().forEach(this::scrapFullText);
         }
@@ -254,77 +240,67 @@ public class NewsInfoService {
         return response != null ? response : new NewsTotalArticles(0L, Collections.emptyList());
     }
 
-    public String buildFeedCacheKey(Long userId, String category) {
+    public String buildFeedCacheKey(Long userId, String category){
         String user = "user:";
-        if (userId != null) user = user + userId;
+        if(userId != null) user = user + userId;
 
-        if (category == null || category.isBlank()) {
+        if(category == null || category.isBlank()){
             return user + ":general";
         }
         return user + ":category:" + category;
     }
 
-    public FeedCache getFeedCache(String cacheKey) {
+    public FeedCache getFeedCache(String cacheKey){
         Cache cache = cacheManager.getCache("generalFeed");
 
-        if (cache == null) {
-            return new FeedCache(new ArrayList<>(), null, null, null, null);
+        if(cache == null){
+            return new FeedCache(new ArrayList<>(), null, null,null);
         }
         FeedCache feedCache = cache.get(cacheKey, FeedCache.class);
-        if (feedCache == null || feedCache.articles() == null) {
-            return new FeedCache(new ArrayList<>(), null, null, null, null);
+        if(feedCache == null || feedCache.articles() == null){
+            return new FeedCache(new ArrayList<>(),null,null,null);
         }
 
-        return new FeedCache(new ArrayList<>(feedCache.articles()), feedCache.newestPublishedAt(), feedCache.oldestPublishedAt(), feedCache.lastDeliveredIndex(), feedCache.lastDeliveredPublishedAt());
+        return new FeedCache(new ArrayList<>(feedCache.articles()),feedCache.newestPublishedAt(),feedCache.oldestPublishedAt(),feedCache.lastDeliveredIndex());
     }
 
-    public void saveFeedCache(String cacheKey, List<NewsInfo> articles) {
+    public void saveFeedCache(String cacheKey, List<NewsInfo> articles){
         FeedCache oldCache = getFeedCache(cacheKey);
-        saveFeedCache(cacheKey, articles, oldCache.lastDeliveredIndex(), oldCache.lastDeliveredPublishedAt());
+        saveFeedCache(cacheKey, articles, oldCache.lastDeliveredIndex());
     }
 
 
-    public void saveFeedCache(String cacheKey, List<NewsInfo> articles, Integer lastDeliveredIndex, String lastDeliveredPublishedAt) {
+    public void saveFeedCache(String cacheKey,List<NewsInfo> articles, Integer lastDeliveredIndex){
         Cache cache = cacheManager.getCache("generalFeed");
-        if (cache != null) {
-            List<NewsInfo> savedArticles = cleanAndSortArticles(articles);
-            FeedCache feedCache = new FeedCache(new ArrayList<>(savedArticles), findNewestPublishedAt(savedArticles), findOldestPublishedAt(savedArticles), lastDeliveredIndex, lastDeliveredPublishedAt);
-            cache.put(cacheKey, feedCache);
-        }
+        if(cache == null)return;
+        //Losiento x2
+        List<NewsInfo> savedArticles = cleanAndSortArticles(articles);
+        FeedCache feedCache = new FeedCache(new ArrayList<>(savedArticles),findNewestPublishedAt(savedArticles), findOldestPublishedAt(savedArticles),lastDeliveredIndex);
+        cache.put(cacheKey, feedCache);
 
     }
-
     public List<NewsInfo> removeAlreadyCachedArticles(List<NewsInfo> cachedArticles, List<NewsInfo> newArticles) {
-        Set<String> cachedKeys = cachedArticles.stream()
-                .map(this::getArticleUniqueKey)
-                .filter(key -> !key.isBlank())
-                .collect(Collectors.toSet());
+
+        List<String> cachedUrls = cachedArticles.stream()
+                .map(NewsInfo::getUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .toList();
 
         return newArticles.stream()
                 .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
-                .filter(article -> !cachedKeys.contains(getArticleUniqueKey(article)))
+                .filter(article -> !cachedUrls.contains(article.getUrl()))
                 .toList();
     }
 
-    private String getArticleUniqueKey(NewsInfo article) {
-        if (article == null || article.getTitle() == null || article.getTitle().isBlank()) {
-            return article != null && article.getUrl() != null ? article.getUrl() : UUID.randomUUID().toString();
-        }
-        String title = article.getTitle().toLowerCase();
-        return title.replaceAll("[^a-záéíóúñ0-9]", "");
-    }
 
-
-    private List<NewsInfo> cleanAndSortArticles(List<NewsInfo> articles) {
-        if (articles == null || articles.isEmpty()) {
+    private List<NewsInfo> cleanAndSortArticles(List<NewsInfo> articles){
+        if(articles == null || articles.isEmpty()){
             return Collections.emptyList();
         }
 
-        return articles.stream()
-                .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
-                .filter(article -> article.getTitle() != null && !article.getTitle().isBlank())
+        return articles.stream().filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
                 .collect(Collectors.toMap(
-                        this::getArticleUniqueKey,
+                        NewsInfo::getUrl,
                         article -> article,
                         (existing, duplicate) -> existing,
                         LinkedHashMap::new
@@ -335,14 +311,18 @@ public class NewsInfoService {
                         NewsInfo::getPublishedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())
                 ))
-                .collect(Collectors.toCollection(ArrayList::new));
+                .toList();
     }
 
-    private Page<NewsInfo> paginate(List<NewsInfo> articles, Pageable pageable) {
+
+
+
+
+    private Page<NewsInfo> paginate(List<NewsInfo> articles, Pageable pageable){
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), articles.size());
 
-        if (start >= articles.size()) {
+        if(start >= articles.size()){
             return Page.empty(pageable);
         }
 
@@ -357,7 +337,7 @@ public class NewsInfoService {
 
         return articles.stream()
                 .map(NewsInfo::getPublishedAt)
-                .filter(x -> x != null && !x.isBlank())
+                .filter(x-> x != null && !x.isBlank())
                 .max(String::compareTo)
                 .orElse(null);
     }
@@ -396,7 +376,7 @@ public class NewsInfoService {
         }
     }
 
-    public NewsTotalArticles fallBackGetNewsByCategory(String query, int maxArticles, String fromDate, String toDate, String category, Throwable t) {
+    public NewsTotalArticles fallBackGetNewsByCategory(String query, int maxArticles,String fromDate, String toDate, String category, Throwable t) {
         System.err.println("Circuit Breaker activado para categoría " + category + " - Motivo: " + t.getMessage());
         return new NewsTotalArticles(0L, Collections.emptyList());
     }
