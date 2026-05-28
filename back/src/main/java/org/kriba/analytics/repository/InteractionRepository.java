@@ -37,4 +37,6 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
 
         Long getArticlesRead();
     }
+
+	void deleteAllByUserId(long userId);
 }
