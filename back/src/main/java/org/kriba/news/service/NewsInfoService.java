@@ -119,7 +119,6 @@ public class NewsInfoService {
 
             if(cleanNewBatch.isEmpty()){
                 break;
-                //Losiento x1
             }
 
             expandedArticles.addAll(cleanNewBatch);
@@ -130,17 +129,13 @@ public class NewsInfoService {
         saveFeedCache(cacheKey, expandedArticles);
         return  expandedArticles;
     }
-    //Estas tres son para cuando tu hagas la llamada a la API seran de tres tipos la llamada
 
-    //Para la gente que nunca habia inciado sesion osea la gente que no tiene ni el campo de fecha de publicacion mas antigua ni fecha de publicacion mas nueva
     public List<NewsInfo> loadRecentBatch(Long userId, String category, int batchSize){
         return buildFeedArticles(userId,category,batchSize,null,null);
     }
-    //Para buscar las noticias mas antiguas que la ultima publicacion vista por el usuario
     public List<NewsInfo> loadOlderBatch(Long userid, String category, int batchSize, String oldestPublishedAt){
         return buildFeedArticles(userid, category,batchSize,null,oldestPublishedAt);
     }
-    //Para buscar las mas nuevas
     public List<NewsInfo> loadNewerBatch(Long userId, String category, int batchSize, String newestPublishedAt){
         return buildFeedArticles(userId,category,batchSize,newestPublishedAt,null);
     }
@@ -273,7 +268,6 @@ public class NewsInfoService {
     public void saveFeedCache(String cacheKey,List<NewsInfo> articles, Integer lastDeliveredIndex){
         Cache cache = cacheManager.getCache("generalFeed");
         if(cache == null)return;
-        //Losiento x2
         List<NewsInfo> savedArticles = cleanAndSortArticles(articles);
         FeedCache feedCache = new FeedCache(new ArrayList<>(savedArticles),findNewestPublishedAt(savedArticles), findOldestPublishedAt(savedArticles),lastDeliveredIndex);
         cache.put(cacheKey, feedCache);
