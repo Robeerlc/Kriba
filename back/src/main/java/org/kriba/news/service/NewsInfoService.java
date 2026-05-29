@@ -305,8 +305,24 @@ public class NewsInfoService {
 
         return newArticles.stream()
                 .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
-                .filter(article -> !cachedUrls.contains(article.getUrl()))
+                .filter(article -> !cachedUrls.contains(getArticleUniqueKey(article)))
                 .toList();
+    }
+
+    private String getArticleUniqueKey(NewsInfo article) {
+        if (article == null) {
+            return "";
+        }
+
+        String title = article.getTitle() != null
+                ? article.getTitle().trim().toLowerCase()
+                : "";
+
+        String publishedAt = article.getPublishedAt() != null
+                ? article.getPublishedAt().trim()
+                : "";
+
+        return title + "|" + publishedAt;
     }
 
 
@@ -315,7 +331,9 @@ public class NewsInfoService {
             return Collections.emptyList();
         }
 
-        return articles.stream().filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
+        return articles.stream()
+                .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
+                .filter(article -> article.getTitle() != null && !article.getTitle().isBlank())
                 .collect(Collectors.toMap(
                         NewsInfo::getUrl,
                         article -> article,
