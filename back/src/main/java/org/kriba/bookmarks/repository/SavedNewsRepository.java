@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface SavedNewsRepository extends JpaRepository<SavedArticle, Long> {
     Page<SavedArticle> findAllByUserId(Long userid, Pageable pageable);
-
+    List<SavedArticle> findAllByUserId(Long userId);
     boolean existsByUserIdAndExternalArticleId(Long userId, String externalArticleId);
 
     Optional<SavedArticle> findByUserIdAndExternalArticleId(Long userId, String externalArticleId);
