@@ -305,25 +305,11 @@ public class NewsInfoService {
 
         return newArticles.stream()
                 .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
-                .filter(article -> !cachedUrls.contains(getArticleUniqueKey(article)) )
+                .filter(article -> !cachedUrls.contains(article.getTitle()))
                 .toList();
     }
 
-    private String getArticleUniqueKey(NewsInfo article) {
-        if (article == null) {
-            return "";
-        }
 
-        String title = article.getTitle() != null
-                ? article.getTitle().trim().toLowerCase()
-                : "";
-
-        String publishedAt = article.getPublishedAt() != null
-                ? article.getPublishedAt().trim()
-                : "";
-
-        return title + "|" + publishedAt;
-    }
 
 
     private List<NewsInfo> cleanAndSortArticles(List<NewsInfo> articles){
