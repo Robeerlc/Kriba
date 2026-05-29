@@ -74,77 +74,90 @@ public class NewsInfoService {
 
         FeedCache feedCache = getFeedCache(cacheKey);
         List<NewsInfo> articles = new ArrayList<>(feedCache.articles());
-        int pageSize = pageable.getPageSize();
-        int start;
 
+        if(pageable.getPageNumber() == 0 && feedCache.lastDeliveredPublishedAt() != null){
+            List<NewsInfo> olderBath = loadOlderBatch(userId, category, FEED_BATCH_SIZE, feedCache.lastDeliveredPublishedAt());
+            List<NewsInfo> cleanOlderBatch = removeAlreadyCachedArticles(articles, olderBath);
+            if(cleanOlderBatch.isEmpty()){
+                return Page.empty(pageable);
+            }
 
-        if(pageable.getPageNumber() == 0 && feedCache.lastDeliveredIndex() != null){
-            start = feedCache.lastDeliveredIndex() + 1;
-        }else{
-            start = (int) pageable.getOffset();
+            articles.addAll(cleanOlderBatch);
+            articles = cleanAndSortArticles(articles);
+
+            List<NewsInfo> content = cleanOlderBatch.size() > pageable.getPageSize()
+                    ? cleanOlderBatch.subList(0 , pageable.getPageSize()): cleanOlderBatch;
+
+            String lastDeliveredPublishedAt = content.getLast().getPublishedAt();
+
+            saveFeedCache(cacheKey, articles, null, lastDeliveredPublishedAt);
+
+            return new PageImpl<>(content, pageable,content.size());
         }
-        int requiredEnd = start + pageSize;
-        articles = getOrExpandCachedFeed(userId, category,cacheKey,requiredEnd);
 
-        if(articles.isEmpty() || start >= articles.size()){
-            saveFeedCache(cacheKey, articles, feedCache.lastDeliveredIndex());
-            return Page.empty(pageable);
+        int requiredEnd = (int) pageable.getOffset() + pageable.getPageSize();
+
+        articles = getOrExpandCachedFeed(userId, category, cacheKey, requiredEnd);
+
+        Page<NewsInfo> page = paginate(articles, pageable);
+
+        if (!page.getContent().isEmpty()) {
+            List<NewsInfo> content = page.getContent();
+            NewsInfo lastArticle = content.getLast();
+
+            saveFeedCache(
+                    cacheKey,
+                    articles,
+                    (int) pageable.getOffset() + content.size() - 1,
+                    lastArticle.getPublishedAt()
+            );
         }
 
-        int end = Math.min(requiredEnd, articles.size());
-        List<NewsInfo> content = articles.subList(start,end);
-        int newLastDeliveredIndex = end - 1;
-        saveFeedCache(cacheKey,articles,newLastDeliveredIndex);
-
-        return new PageImpl<>(content,pageable,articles.size());
+        return page;
     }
-    public List<NewsInfo> getOrExpandCachedFeed(Long userId, String category,String cacheKey,int requiredEnd) {
+    public List<NewsInfo> getOrExpandCachedFeed(Long userId, String category, String cacheKey, int requiredEnd){
+        FeedCache feedCache = getFeedCache(cacheKey);
+        List<NewsInfo> expandedArticles = new ArrayList<>(feedCache.articles());
 
-    FeedCache feedCache = getFeedCache(cacheKey);
+        if(expandedArticles.size() >= requiredEnd){
+            return expandedArticles;
+        }
 
-    List<NewsInfo> expandedArticles =
-            new ArrayList<>(feedCache.articles());
+        String oldestPublishedAt = feedCache.oldestPublishedAt();
 
-    if (expandedArticles.size() >= requiredEnd) {
-        return expandedArticles;
-    }
 
-    String oldestPublishedAt = feedCache.oldestPublishedAt();
+        while(expandedArticles.size() < requiredEnd){
+            List<NewsInfo> newBatch;
+            if(expandedArticles.isEmpty())newBatch = loadRecentBatch(userId,category,FEED_BATCH_SIZE);
+            else newBatch = loadOlderBatch(userId, category, FEED_BATCH_SIZE, oldestPublishedAt);
 
-    while (expandedArticles.size() < requiredEnd) {
 
-        List<NewsInfo> newBatch = expandedArticles.isEmpty()
-                ? loadRecentBatch(userId, category, FEED_BATCH_SIZE)
-                : loadOlderBatch(userId, category, FEED_BATCH_SIZE, oldestPublishedAt);
+            List<NewsInfo> cleanNewBatch = removeAlreadyCachedArticles(expandedArticles, newBatch);
 
-        List<NewsInfo> cleanNewBatch =
-                removeAlreadyCachedArticles(expandedArticles, newBatch);
-
-        if (!cleanNewBatch.isEmpty()) {
+            if(cleanNewBatch.isEmpty()){
+                break;
+                //Losiento x1
+            }
 
             expandedArticles.addAll(cleanNewBatch);
+            expandedArticles = new ArrayList<>(cleanAndSortArticles(expandedArticles));
 
-            expandedArticles =
-                    new ArrayList<>(cleanAndSortArticles(expandedArticles));
-
-            oldestPublishedAt =
-                    findOldestPublishedAt(expandedArticles);
-
-        } else {
-
-            requiredEnd = expandedArticles.size();
+            oldestPublishedAt = findOldestPublishedAt(expandedArticles);
         }
+        saveFeedCache(cacheKey, expandedArticles);
+        return  expandedArticles;
     }
+    //Estas tres son para cuando tu hagas la llamada a la API seran de tres tipos la llamada
 
-    saveFeedCache(cacheKey, expandedArticles);
-    return expandedArticles;
-}
+    //Para la gente que nunca habia inciado sesion osea la gente que no tiene ni el campo de fecha de publicacion mas antigua ni fecha de publicacion mas nueva
     public List<NewsInfo> loadRecentBatch(Long userId, String category, int batchSize){
         return buildFeedArticles(userId,category,batchSize,null,null);
     }
+    //Para buscar las noticias mas antiguas que la ultima publicacion vista por el usuario
     public List<NewsInfo> loadOlderBatch(Long userid, String category, int batchSize, String oldestPublishedAt){
         return buildFeedArticles(userid, category,batchSize,null,oldestPublishedAt);
     }
+    //Para buscar las mas nuevas
     public List<NewsInfo> loadNewerBatch(Long userId, String category, int batchSize, String newestPublishedAt){
         return buildFeedArticles(userId,category,batchSize,newestPublishedAt,null);
     }
@@ -258,27 +271,27 @@ public class NewsInfoService {
         Cache cache = cacheManager.getCache("generalFeed");
 
         if(cache == null){
-            return new FeedCache(new ArrayList<>(), null, null,null);
+            return new FeedCache(new ArrayList<>(), null, null,null,null);
         }
         FeedCache feedCache = cache.get(cacheKey, FeedCache.class);
         if(feedCache == null || feedCache.articles() == null){
-            return new FeedCache(new ArrayList<>(),null,null,null);
+            return new FeedCache(new ArrayList<>(),null,null,null,null);
         }
 
-        return new FeedCache(new ArrayList<>(feedCache.articles()),feedCache.newestPublishedAt(),feedCache.oldestPublishedAt(),feedCache.lastDeliveredIndex());
+        return new FeedCache(new ArrayList<>(feedCache.articles()),feedCache.newestPublishedAt(),feedCache.oldestPublishedAt(),feedCache.lastDeliveredIndex(),feedCache.lastDeliveredPublishedAt());
     }
 
     public void saveFeedCache(String cacheKey, List<NewsInfo> articles){
         FeedCache oldCache = getFeedCache(cacheKey);
-        saveFeedCache(cacheKey, articles, oldCache.lastDeliveredIndex());
+        saveFeedCache(cacheKey, articles, oldCache.lastDeliveredIndex(),oldCache.lastDeliveredPublishedAt());
     }
 
 
-    public void saveFeedCache(String cacheKey,List<NewsInfo> articles, Integer lastDeliveredIndex){
+    public void saveFeedCache(String cacheKey,List<NewsInfo> articles, Integer lastDeliveredIndex, String lastDeliveredPublishedAt){
         Cache cache = cacheManager.getCache("generalFeed");
-        if(cache != null){
+        if(cache != null) {
             List<NewsInfo> savedArticles = cleanAndSortArticles(articles);
-            FeedCache feedCache = new FeedCache(new ArrayList<>(savedArticles),findNewestPublishedAt(savedArticles), findOldestPublishedAt(savedArticles),lastDeliveredIndex);
+            FeedCache feedCache = new FeedCache(new ArrayList<>(savedArticles), findNewestPublishedAt(savedArticles), findOldestPublishedAt(savedArticles), lastDeliveredIndex, lastDeliveredPublishedAt);
             cache.put(cacheKey, feedCache);
         }
 
@@ -315,7 +328,7 @@ public class NewsInfoService {
                         NewsInfo::getPublishedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())
                 ))
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
 
