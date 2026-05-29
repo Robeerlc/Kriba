@@ -307,19 +307,11 @@ public class NewsInfoService {
     }
 
     private String getArticleUniqueKey(NewsInfo article) {
-        if (article == null) {
-            return "";
+        if (article == null || article.getTitle() == null || article.getTitle().isBlank()) {
+            return article != null && article.getUrl() != null ? article.getUrl() : UUID.randomUUID().toString();
         }
-
-        String title = article.getTitle() != null
-                ? article.getTitle().trim().toLowerCase()
-                : "";
-
-        String publishedAt = article.getPublishedAt() != null
-                ? article.getPublishedAt().trim()
-                : "";
-
-        return title + "|" + publishedAt;
+        String title = article.getTitle().toLowerCase();
+        return title.replaceAll("[^a-záéíóúñ0-9]", "");
     }
 
 
@@ -332,7 +324,7 @@ public class NewsInfoService {
                 .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
                 .filter(article -> article.getTitle() != null && !article.getTitle().isBlank())
                 .collect(Collectors.toMap(
-                        NewsInfo::getUrl,
+                        this::getArticleUniqueKey,
                         article -> article,
                         (existing, duplicate) -> existing,
                         LinkedHashMap::new
