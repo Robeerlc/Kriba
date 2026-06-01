@@ -24,51 +24,94 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final SavedNewsRepository savedNewRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final EmailService emailService;
 
-    public UserService(InteractionRepository interactionRepository, UserRepository userRepository,
-                       PasswordEncoder passwordEncoder, SavedNewsRepository savedNewRepository,
-                       SubscriptionRepository subscriptionRepository) {
+    public UserService(
+            InteractionRepository interactionRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            SavedNewsRepository savedNewRepository,
+            SubscriptionRepository subscriptionRepository,
+            EmailService emailService
+    ) {
         this.interactionRepository = interactionRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.savedNewRepository = savedNewRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.emailService = emailService;
     }
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent())
-            throw new IllegalArgumentException("El email ya está registrado en Kriba");
 
-        User user = User.builder().username(request.username()).email(request.email())
-                .password(passwordEncoder.encode(request.password())).build();
+        if (userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("El email ya está registrado en Kriba");
+        }
+
+        User user = User.builder()
+                .username(request.username())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .verified(false)
+                .dailyAiLimit(3)
+                .build();
+
         User savedUser = userRepository.save(user);
 
-        return AuthResponse.builder().userId(savedUser.getId()).username(savedUser.getUsername())
-                .dailyAiLimit(savedUser.getDailyAiLimit()).build();
-    }
+        try {
+            emailService.sendVerificationEmail(savedUser);
+        } catch (Exception e) {
+            System.out.println("Error enviando email: " + e.getMessage());
+        }
 
+        return AuthResponse.builder()
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
+                .dailyAiLimit(savedUser.getDailyAiLimit())
+                .build();
+    }
     public AuthResponse login(LoginRequest request) {
+
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword()))
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new IllegalArgumentException("Contraseña incorrecta");
+        }
+        
 
-        return AuthResponse.builder().userId(user.getId()).username(user.getUsername())
-                .dailyAiLimit(user.getDailyAiLimit()).build();
+        if ((user.getVerified() == false)) {
+            throw new IllegalArgumentException("Debes verificar tu correo antes de iniciar sesión");
+        }
+
+        return AuthResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .dailyAiLimit(user.getDailyAiLimit())
+                .build();
     }
 
     @Transactional
     public AuthResponse modifyData(ModifyRequest request) {
-        AuthResponse currentAuth = login(request.loginRequest());
-        User user = userRepository.findById(currentAuth.userId()).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        String newEmail = request.newEmail();
-        if (newEmail != null && !newEmail.isBlank() && !newEmail.equals(user.getEmail())) {
-            if (userRepository.existsByEmail(newEmail)) {
+        AuthResponse currentAuth = login(request.loginRequest());
+
+        User user = userRepository.findById(currentAuth.userId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        if (request.newEmail() != null && !request.newEmail().isBlank()
+                && !request.newEmail().equals(user.getEmail())) {
+
+            if (userRepository.existsByEmail(request.newEmail())) {
                 throw new IllegalArgumentException("El email ya está en uso");
             }
-            user.setEmail(newEmail);
+
+            user.setEmail(request.newEmail());
+            user.setVerified(false);
+
+            userRepository.save(user);
+
+            emailService.sendVerificationEmail(user);
         }
 
         if (request.newUsername() != null && !request.newUsername().isBlank()) {
@@ -79,27 +122,47 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(request.newPassword()));
         }
 
-        User userSaved = userRepository.save(user);
-        return AuthResponse.builder().userId(userSaved.getId())
-                .username(userSaved.getUsername())
-                .dailyAiLimit(userSaved.getDailyAiLimit())
+        User saved = userRepository.save(user);
+
+        return AuthResponse.builder()
+                .userId(saved.getId())
+                .username(saved.getUsername())
+                .dailyAiLimit(saved.getDailyAiLimit())
                 .build();
     }
 
     public void deleteAccount(LoginRequest request) {
+
         AuthResponse currentAuth = login(request);
+
         long userId = currentAuth.userId();
+
         interactionRepository.deleteAllByUserId(userId);
         savedNewRepository.deleteAll(savedNewRepository.findAllByUserId(userId));
         subscriptionRepository.deleteAll(subscriptionRepository.findAllByUserId(userId));
+
         userRepository.deleteById(userId);
+    }
+
+    @Transactional
+    public void verifyAccount(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        user.setVerified(true);
+
+        userRepository.save(user);
     }
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void resetDailyAiLimits() {
-        List<User> allUsers = userRepository.findAll();
-        allUsers.forEach(user -> user.setDailyAiLimit(3));
-        userRepository.saveAll(allUsers);
+
+        List<User> users = userRepository.findAll();
+
+        users.forEach(u -> u.setDailyAiLimit(3));
+
+        userRepository.saveAll(users);
     }
 }

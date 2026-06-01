@@ -30,7 +30,12 @@ public class User {
     @Builder.Default
     private Integer dailyAiLimit = 3;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean verified = false;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    
 }
