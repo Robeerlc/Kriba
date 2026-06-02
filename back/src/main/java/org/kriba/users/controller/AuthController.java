@@ -5,6 +5,9 @@ import org.kriba.users.dto.*;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -37,9 +40,14 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/verify/{id}")
-    public ResponseEntity<String> verify(@PathVariable("id") Long id) {
-        userService.verifyAccount(id);
-        return ResponseEntity.ok("Cuenta verificada correctamente");
+    @GetMapping("/verify/{uuid}")
+    public ResponseEntity<Void> verify(@PathVariable("uuid") UUID uuid) {
+        userService.verifyAccount(uuid);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(
+                "Location",
+                "http://localhost:8080/login"
+        );
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }

@@ -20,8 +20,7 @@ public class EmailService {
 
     public void sendVerificationEmail(User user) {
 
-        String url = baseUrl + "/api/v1/auth/verify/" + user.getId();
-
+        String url = baseUrl + "/api/v1/auth/verify/" + user.getVerificationUuid();
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
         message.setSubject("Verifica tu cuenta - Kriba");

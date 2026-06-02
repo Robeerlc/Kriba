@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -53,6 +53,7 @@ public class UserService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .verified(false)
+                .verificationUuid(UUID.randomUUID())
                 .dailyAiLimit(3)
                 .build();
 
@@ -108,7 +109,7 @@ public class UserService {
 
             user.setEmail(request.newEmail());
             user.setVerified(false);
-
+            user.setVerificationUuid(UUID.randomUUID());
             userRepository.save(user);
 
             emailService.sendVerificationEmail(user);
@@ -145,13 +146,13 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyAccount(Long id) {
+    public void verifyAccount(UUID uuid) {
 
-        User user = userRepository.findById(id)
+        User user = userRepository.findByVerificationUuid(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         user.setVerified(true);
-
+        user.setVerificationUuid(null);
         userRepository.save(user);
     }
 
