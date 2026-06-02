@@ -1,16 +1,14 @@
 package org.kriba.users.controller;
 
 import jakarta.validation.Valid;
-import org.kriba.users.dto.AuthResponse;
-import org.kriba.users.dto.LoginRequest;
-import org.kriba.users.dto.ModifyRequest;
-import org.kriba.users.dto.RegisterRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.kriba.users.dto.*;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -37,9 +35,23 @@ public class AuthController {
         return ResponseEntity.ok(userService.modifyData(request));
     }
 
-    @PostMapping("(delete")
+    @PostMapping("/delete")
     public ResponseEntity<Void> deleteAccount(@Valid @RequestBody LoginRequest request) {
         userService.deleteAccount(request);
         return ResponseEntity.noContent().build();
+    }
+
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @GetMapping("/verify/{uuid}")
+    public ResponseEntity<Void> verify(@PathVariable UUID uuid) {
+
+        userService.verifyAccount(uuid);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", frontendBaseUrl + "/");
+
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }
