@@ -44,10 +44,9 @@ public class User {
 
 
     @Column(unique = true)
-    private UUID verificationUuid;
+    private UUID verificationToken;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
-    
 }

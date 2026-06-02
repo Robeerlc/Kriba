@@ -14,6 +14,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
     private final UserService userService;
 
     public AuthController(UserService userService) {
@@ -41,17 +43,13 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @Value("${frontend.base-url}")
-    private String frontendBaseUrl;
+
 
     @GetMapping("/verify/{uuid}")
     public ResponseEntity<Void> verify(@PathVariable UUID uuid) {
-
         userService.verifyAccount(uuid);
-
         HttpHeaders headers = new HttpHeaders();
         headers.add("Location", frontendBaseUrl + "/");
-
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }

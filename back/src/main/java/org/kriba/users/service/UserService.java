@@ -43,24 +43,20 @@ public class UserService {
     }
 
     public AuthResponse register(RegisterRequest request) {
-
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("El email ya está registrado en Kriba");
         }
 
         UUID uuid = UUID.randomUUID();
-
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .verified(false)
-                .verificationUuid(uuid)
+                .verificationToken(uuid)
                 .dailyAiLimit(3)
                 .build();
-
         User savedUser = userRepository.save(user);
-
         emailService.sendVerificationEmail(savedUser, uuid.toString());
 
         return AuthResponse.builder()
@@ -70,14 +66,12 @@ public class UserService {
                 .build();
     }
     public AuthResponse login(LoginRequest request) {
-
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new IllegalArgumentException("Contraseña incorrecta");
         }
-
 
         if ((user.getVerified() == false)) {
             throw new IllegalArgumentException("Debes verificar tu correo antes de iniciar sesión");
@@ -92,9 +86,7 @@ public class UserService {
 
     @Transactional
     public AuthResponse modifyData(ModifyRequest request) {
-
         AuthResponse currentAuth = login(request.loginRequest());
-
         User user = userRepository.findById(currentAuth.userId())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -106,13 +98,11 @@ public class UserService {
             }
 
             UUID uuid = UUID.randomUUID();
-
             user.setEmail(request.newEmail());
             user.setVerified(false);
-            user.setVerificationUuid(uuid);
+            user.setVerificationToken(uuid);
 
             userRepository.save(user);
-
             emailService.sendVerificationEmail(user, uuid.toString());
         }
 
@@ -125,7 +115,6 @@ public class UserService {
         }
 
         User saved = userRepository.save(user);
-
         return AuthResponse.builder()
                 .userId(saved.getId())
                 .username(saved.getUsername())
@@ -134,37 +123,28 @@ public class UserService {
     }
 
     public void deleteAccount(LoginRequest request) {
-
         AuthResponse currentAuth = login(request);
-
         long userId = currentAuth.userId();
-
         interactionRepository.deleteAllByUserId(userId);
         savedNewRepository.deleteAll(savedNewRepository.findAllByUserId(userId));
         subscriptionRepository.deleteAll(subscriptionRepository.findAllByUserId(userId));
-
         userRepository.deleteById(userId);
     }
 
     @Transactional
     public void verifyAccount(UUID uuid) {
-
-        User user = userRepository.findByVerificationUuid(uuid)
+        User user = userRepository.findByVerificationToken(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-
         user.setVerified(true);
-        user.setVerificationUuid(null);
+        user.setVerificationToken(null);
         userRepository.save(user);
     }
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void resetDailyAiLimits() {
-
         List<User> users = userRepository.findAll();
-
         users.forEach(u -> u.setDailyAiLimit(3));
-
         userRepository.saveAll(users);
     }
 }

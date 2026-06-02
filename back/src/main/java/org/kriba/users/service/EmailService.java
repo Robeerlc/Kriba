@@ -19,14 +19,12 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(User user, String uuid) {
-
         String link = backendBaseUrl + "/api/v1/auth/verify/" + uuid;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
         message.setSubject("Verifica tu cuenta");
         message.setText("Haz click aquí para verificar tu cuenta:\n" + link);
-
         mailSender.send(message);
     }
 }
