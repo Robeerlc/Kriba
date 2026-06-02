@@ -1,6 +1,7 @@
 package org.kriba.users.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.kriba.users.dto.*;
 import org.kriba.users.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -40,14 +41,17 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
+
     @GetMapping("/verify/{uuid}")
-    public ResponseEntity<Void> verify(@PathVariable("uuid") UUID uuid) {
+    public ResponseEntity<Void> verify(@PathVariable UUID uuid) {
+
         userService.verifyAccount(uuid);
+
         HttpHeaders headers = new HttpHeaders();
-        headers.add(
-                "Location",
-                "http://localhost:4200/login"
-        );
+        headers.add("Location", frontendBaseUrl + "/login");
+
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }

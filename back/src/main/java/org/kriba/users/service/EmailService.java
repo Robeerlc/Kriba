@@ -11,26 +11,21 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.base-url}")
-    private String baseUrl;
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
-    public void sendVerificationEmail(User user) {
+    public void sendVerificationEmail(User user, String uuid) {
 
-        String url = baseUrl + "/api/v1/auth/verify/" + user.getVerificationUuid();
+        String link = frontendBaseUrl + "/verify?uuid=" + uuid;
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
-        message.setSubject("Verifica tu cuenta - Kriba");
-
-        message.setText(
-                "Bienvenido a Kriba!\n\n" +
-                "Para activar tu cuenta haz click en el siguiente enlace:\n\n" +
-                url + "\n\n" +
-                "Si no has creado esta cuenta, ignora este correo."
-        );
+        message.setSubject("Verifica tu cuenta");
+        message.setText("Haz click aquí para verificar tu cuenta:\n" + link);
 
         mailSender.send(message);
     }

@@ -48,22 +48,20 @@ public class UserService {
             throw new IllegalArgumentException("El email ya está registrado en Kriba");
         }
 
+        UUID uuid = UUID.randomUUID();
+
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .verified(false)
-                .verificationUuid(UUID.randomUUID())
+                .verificationUuid(uuid)
                 .dailyAiLimit(3)
                 .build();
 
         User savedUser = userRepository.save(user);
 
-        try {
-            emailService.sendVerificationEmail(savedUser);
-        } catch (Exception e) {
-            System.out.println("Error enviando email: " + e.getMessage());
-        }
+        emailService.sendVerificationEmail(savedUser, uuid.toString());
 
         return AuthResponse.builder()
                 .userId(savedUser.getId())
@@ -79,7 +77,7 @@ public class UserService {
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new IllegalArgumentException("Contraseña incorrecta");
         }
-        
+
 
         if ((user.getVerified() == false)) {
             throw new IllegalArgumentException("Debes verificar tu correo antes de iniciar sesión");
@@ -107,12 +105,15 @@ public class UserService {
                 throw new IllegalArgumentException("El email ya está en uso");
             }
 
+            UUID uuid = UUID.randomUUID();
+
             user.setEmail(request.newEmail());
             user.setVerified(false);
-            user.setVerificationUuid(UUID.randomUUID());
+            user.setVerificationUuid(uuid);
+
             userRepository.save(user);
 
-            emailService.sendVerificationEmail(user);
+            emailService.sendVerificationEmail(user, uuid.toString());
         }
 
         if (request.newUsername() != null && !request.newUsername().isBlank()) {
