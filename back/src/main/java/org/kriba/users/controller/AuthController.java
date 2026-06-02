@@ -50,7 +50,7 @@ public class AuthController {
         userService.verifyAccount(uuid);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Location", frontendBaseUrl + "/login");
+        headers.add("Location", frontendBaseUrl + "/");
 
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
