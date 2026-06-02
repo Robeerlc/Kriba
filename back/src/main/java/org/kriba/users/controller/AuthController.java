@@ -43,8 +43,6 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-
-
     @GetMapping("/verify/{uuid}")
     public ResponseEntity<Void> verify(@PathVariable UUID uuid) {
         userService.verifyAccount(uuid);
