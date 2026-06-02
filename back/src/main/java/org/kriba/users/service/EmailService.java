@@ -11,8 +11,8 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${frontend.base-url}")
-    private String frontendBaseUrl;
+    @Value("${app.base-url}")
+    private String backendBaseUrl;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
@@ -20,7 +20,7 @@ public class EmailService {
 
     public void sendVerificationEmail(User user, String uuid) {
 
-        String link = frontendBaseUrl + "/verify?uuid=" + uuid;
+        String link = backendBaseUrl + "/api/v1/auth/verify/" + uuid;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
