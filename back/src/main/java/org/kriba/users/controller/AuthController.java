@@ -46,7 +46,7 @@ public class AuthController {
         HttpHeaders headers = new HttpHeaders();
         headers.add(
                 "Location",
-                "http://localhost:8080/login"
+                "http://localhost:4200/login"
         );
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
