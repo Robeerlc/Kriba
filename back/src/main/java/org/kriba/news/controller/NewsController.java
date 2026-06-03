@@ -27,7 +27,7 @@ public class NewsController {
         this.newsService = newsService;
         this.userService = userService;
     }
-
+    @PostMapping
     public ResponseEntity<Page<NewsInfo>> getFeed(@Valid @RequestBody FeedRequest request,
                                                   @PageableDefault(size = 10,
                                                   sort = "publishedAt", direction = Sort.Direction.DESC) Pageable pageable) {
