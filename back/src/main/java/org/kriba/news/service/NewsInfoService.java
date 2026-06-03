@@ -140,6 +140,11 @@ public class NewsInfoService {
     @Cacheable(value = "newsByCategory", key = "{#query ,#category, #page, #maxArticles}")
     @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
     public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, int page, String category) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
         UriComponentsBuilder uriBuilder = UriComponentsBuilder
                 .fromPath("/search")
                 .queryParam("q", query)
