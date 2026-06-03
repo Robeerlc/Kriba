@@ -44,7 +44,7 @@ public class UserService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("El email ya está registrado en Kriba");
+            throw new IllegalArgumentException("No ha sido posible completar el registro con los datos proporcionados");
         }
 
         UUID uuid = UUID.randomUUID();
