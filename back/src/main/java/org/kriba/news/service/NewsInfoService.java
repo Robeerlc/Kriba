@@ -9,6 +9,7 @@ import org.kriba.news.dto.NewsInfo;
 import org.kriba.news.dto.NewsTotalArticles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -135,7 +136,7 @@ public class NewsInfoService {
                 .limit(pageSize)
                 .toList();
     }
-
+    @Cacheable(value = "newsByCategory", key = "{#category, #maxArticles}")
     @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
     public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, int page, String category) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder
