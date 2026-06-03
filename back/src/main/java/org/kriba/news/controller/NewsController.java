@@ -35,6 +35,6 @@ public class NewsController {
         Long currentUserId = null;
         if (request.loginRequest() != null)
             currentUserId = userService.login(request.loginRequest()).userId();
-        return ResponseEntity.ok(newsService.scrollFeed(currentUserId,request.category(),pageable));
+        return ResponseEntity.ok(newsService.getFeed(currentUserId,request.category(),pageable));
     }
 }

@@ -46,7 +46,7 @@ public class NewsInfoService {
                 .build();
     }
 
-    public Page<NewsInfo> scrollFeed(Long userId, String category, Pageable pageable) {
+    public Page<NewsInfo> getFeed(Long userId, String category, Pageable pageable) {
         int gnewsPage = pageable.getPageNumber() + 1;
         int pageSize = Math.min(pageable.getPageSize(), DEFAULT_CATEGORY_MAX_ARTICLES);
 
