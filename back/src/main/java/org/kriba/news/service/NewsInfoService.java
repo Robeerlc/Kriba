@@ -136,7 +136,7 @@ public class NewsInfoService {
                 .limit(pageSize)
                 .toList();
     }
-    @Cacheable(value = "newsByCategory", key = "{#category, #maxArticles}")
+    @Cacheable(value = "newsByCategory", key = "{#category, #page, #maxArticles}")
     @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
     public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, int page, String category) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder
