@@ -75,7 +75,8 @@ public class NewsInfoService {
                 gnewsPage
         );
 
-        return new PageImpl<>(articles, pageable, articles.size());
+        long estimatedTotal = pageable.getOffset() + articles.size() + 1;
+        return new PageImpl<>(articles, pageable, estimatedTotal);
     }
 
     public List<NewsInfo> buildGeneralFeedArticles(Long userId, int pageSize, int gnewsPage) {
@@ -136,7 +137,7 @@ public class NewsInfoService {
                 .limit(pageSize)
                 .toList();
     }
-    @Cacheable(value = "newsByCategory", key = "{#category, #page, #maxArticles}")
+    @Cacheable(value = "newsByCategory", key = "{#query ,#category, #page, #maxArticles}")
     @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
     public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, int page, String category) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder
