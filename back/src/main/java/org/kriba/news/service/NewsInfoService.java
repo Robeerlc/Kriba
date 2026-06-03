@@ -58,11 +58,11 @@ public class NewsInfoService {
                     category
             );
 
-            List<NewsInfo> articles = response != null && response.articles() != null
+            List<NewsInfo> articles = (response != null && response.articles() != null)
                     ? cleanAndSortArticles(response.articles())
                     : Collections.emptyList();
 
-            long totalArticles = response != null && response.totalArticles() != null
+            long totalArticles = (response != null && response.totalArticles() != null)
                     ? response.totalArticles()
                     : articles.size();
 
