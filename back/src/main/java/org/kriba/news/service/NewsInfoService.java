@@ -95,20 +95,15 @@ public class NewsInfoService {
         int minimumNeeded = allCategories.size() * MIN_ARTICLES_PER_CATEGORY;
         int totalArticlesToFetch = Math.max(pageSize, minimumNeeded);
         int remainingArticlesToDistribute = totalArticlesToFetch - minimumNeeded;
-
         List<NewsInfo> allArticles = new ArrayList<>();
-
         long totalPoints = 0;
         Map<String, Long> userPointsMap = new HashMap<>();
 
         if (userId != null) {
-            List<InteractionRepository.CategoryStats> interactions =
-                    interactionRepository.getCategoryStatsByUserId(userId);
-
+            List<InteractionRepository.CategoryStats> interactions = interactionRepository.getCategoryStatsByUserId(userId);
             for (InteractionRepository.CategoryStats stat : interactions) {
                 String cat = stat.getCategory();
                 long points = stat.getPoints();
-
                 userPointsMap.put(cat, points);
                 totalPoints += points;
             }
@@ -116,17 +111,13 @@ public class NewsInfoService {
 
         for (String cat : allCategories) {
             int amountToFetch = MIN_ARTICLES_PER_CATEGORY;
-
             if (totalPoints > 0) {
                 long pointsInThisCategory = userPointsMap.getOrDefault(cat, 0L);
                 double percentage = (double) pointsInThisCategory / totalPoints;
-
                 amountToFetch += (int) Math.round(percentage * remainingArticlesToDistribute);
             }
 
-            NewsTotalArticles response = selfProxy.searchNewsFromGnews(cat, amountToFetch, gnewsPage, cat
-            );
-
+            NewsTotalArticles response = selfProxy.searchNewsFromGnews(cat, amountToFetch, gnewsPage, cat);
             if (response != null && response.articles() != null) {
                 allArticles.addAll(response.articles());
             }
@@ -164,22 +155,27 @@ public class NewsInfoService {
             response.articles().forEach(article -> article.setCategory(category));
             response.articles().parallelStream().forEach(this::scrapFullText);
         }
-
         return response != null
                 ? response
                 : new NewsTotalArticles(0L, Collections.emptyList());
+    }
+
+    private String getArticleUniqueKey(NewsInfo article) {
+        if (article == null || article.getTitle() == null || article.getTitle().isBlank()) {
+            return article != null && article.getUrl() != null ? article.getUrl() : UUID.randomUUID().toString();
+        }
+        return article.getTitle().toLowerCase().replaceAll("[^a-záéíóúñ0-9]", "");
     }
 
     private List<NewsInfo> cleanAndSortArticles(List<NewsInfo> articles) {
         if (articles == null || articles.isEmpty()) {
             return Collections.emptyList();
         }
-
         return articles.stream()
                 .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
                 .filter(article -> article.getTitle() != null && !article.getTitle().isBlank())
                 .collect(Collectors.toMap(
-                        NewsInfo::getUrl,
+                        this::getArticleUniqueKey,
                         article -> article,
                         (existing, duplicate) -> existing,
                         LinkedHashMap::new
