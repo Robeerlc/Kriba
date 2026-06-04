@@ -122,6 +122,7 @@ public class UserService {
                 .build();
     }
 
+    @Transactional
     public void deleteAccount(LoginRequest request) {
         AuthResponse currentAuth = login(request);
         long userId = currentAuth.userId();
