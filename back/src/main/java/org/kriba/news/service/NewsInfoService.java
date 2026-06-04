@@ -11,14 +11,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class NewsInfoService {
+
+    private static final int DEFAULT_CATEGORY_MAX_ARTICLES = 10;
+    private static final int MIN_ARTICLES_PER_CATEGORY = 2;
+
     private final String apiKey;
     private final RestClient restClient;
     private final InteractionRepository interactionRepository;
@@ -27,39 +35,67 @@ public class NewsInfoService {
     @Lazy
     private NewsInfoService selfProxy;
 
-    public NewsInfoService(@Value("${apiKey}") String apiKey, InteractionRepository interactionRepository) {
+    public NewsInfoService(
+            @Value("${apiKey}") String apiKey,
+            InteractionRepository interactionRepository
+    ) {
         this.apiKey = apiKey;
         this.interactionRepository = interactionRepository;
-        this.restClient = RestClient.builder().baseUrl("https://gnews.io/api/v4").build();
+        this.restClient = RestClient.builder()
+                .baseUrl("https://gnews.io/api/v4")
+                .build();
     }
 
-    @Cacheable(value = "newsByCategory", key = "{#category, #maxArticles}")
-    @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallbackGetNewsByCategory")
-    public NewsTotalArticles getNewsByCategory(String category, int maxArticles) {
-        NewsTotalArticles response = restClient.get()
-                .uri("/top-headlines?lang=es&country=es&category=" + category + "&max=" + maxArticles + "&apikey=" + apiKey)
-                .retrieve()
-                .body(NewsTotalArticles.class);
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    public Page<NewsInfo> getFeed(Long userId, String category, Pageable pageable) {
+        int gnewsPage = pageable.getPageNumber() + 1;
+        int pageSize = Math.min(pageable.getPageSize(), DEFAULT_CATEGORY_MAX_ARTICLES);
+
+        if (category != null && !category.isBlank()) {
+            NewsTotalArticles response = selfProxy.searchNewsFromGnews(
+                    category,
+                    pageSize,
+                    gnewsPage,
+                    category
+            );
+
+            List<NewsInfo> articles = (response != null && response.articles() != null)
+                    ? cleanAndSortArticles(response.articles())
+                    : Collections.emptyList();
+
+            long totalArticles = (response != null && response.totalArticles() != null)
+                    ? response.totalArticles()
+                    : articles.size();
+
+            return new PageImpl<>(articles, pageable, totalArticles);
         }
 
-        if (response != null && response.articles() != null) {
-            response.articles().forEach(article -> article.setCategory(category));
-            response.articles().parallelStream().forEach(this::scrapFullText);
-        }
-        return response != null ? response : new NewsTotalArticles(0L, Collections.emptyList());
+        List<NewsInfo> articles = buildGeneralFeedArticles(
+                userId,
+                pageSize,
+                gnewsPage
+        );
+
+        long estimatedTotal = pageable.getOffset() + articles.size() + 1;
+        return new PageImpl<>(articles, pageable, estimatedTotal);
     }
 
-    public NewsTotalArticles getGeneralFeed(Long userId) {
-        List<String> allCategories = List.of("general", "world", "nation", "business", "technology", "entertainment", "sports", "science", "health");
-        int totalArticles = 45, minArticlesPerCategory = 2;
-        int remainingArticlesToDistribute = totalArticles - (allCategories.size() * minArticlesPerCategory);
+    public List<NewsInfo> buildGeneralFeedArticles(Long userId, int pageSize, int gnewsPage) {
+        List<String> allCategories = List.of(
+                "general",
+                "world",
+                "nation",
+                "business",
+                "technology",
+                "entertainment",
+                "sports",
+                "science",
+                "health"
+        );
 
+        int minimumNeeded = allCategories.size() * MIN_ARTICLES_PER_CATEGORY;
+        int totalArticlesToFetch = Math.max(pageSize, minimumNeeded);
+        int remainingArticlesToDistribute = totalArticlesToFetch - minimumNeeded;
         List<NewsInfo> allArticles = new ArrayList<>();
-
         long totalPoints = 0;
         Map<String, Long> userPointsMap = new HashMap<>();
 
@@ -73,25 +109,84 @@ public class NewsInfoService {
             }
         }
 
-        long granTotalGNews = 0;
         for (String cat : allCategories) {
-            int amountToFetch = minArticlesPerCategory;
+            int amountToFetch = MIN_ARTICLES_PER_CATEGORY;
             if (totalPoints > 0) {
                 long pointsInThisCategory = userPointsMap.getOrDefault(cat, 0L);
                 double percentage = (double) pointsInThisCategory / totalPoints;
                 amountToFetch += (int) Math.round(percentage * remainingArticlesToDistribute);
-            } else {
-                amountToFetch = totalArticles / allCategories.size();
             }
 
-            NewsTotalArticles response = selfProxy.getNewsByCategory(cat, amountToFetch);
-            if (response != null) {
-                if (response.totalArticles() != null) granTotalGNews += response.totalArticles();
-                if (response.articles() != null) allArticles.addAll(response.articles());
+            NewsTotalArticles response = selfProxy.searchNewsFromGnews(cat, amountToFetch, gnewsPage, cat);
+            if (response != null && response.articles() != null) {
+                allArticles.addAll(response.articles());
             }
         }
-        Collections.shuffle(allArticles);
-        return new NewsTotalArticles(granTotalGNews, allArticles);
+
+        return cleanAndSortArticles(allArticles)
+                .stream()
+                .limit(pageSize)
+                .toList();
+    }
+    @Cacheable(value = "newsByCategory", key = "{#query ,#category, #page, #maxArticles}")
+    @CircuitBreaker(name = "gnewsApi", fallbackMethod = "fallBackGetNewsByCategory")
+    public NewsTotalArticles searchNewsFromGnews(String query, int maxArticles, int page, String category) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                .fromPath("/search")
+                .queryParam("q", query)
+                .queryParam("lang", "es")
+                .queryParam("country", "es")
+                .queryParam("max", maxArticles)
+                .queryParam("page", page)
+                .queryParam("sortby", "publishedAt")
+                .queryParam("apikey", apiKey);
+
+        NewsTotalArticles response = restClient.get()
+                .uri(uriBuilder.toUriString())
+                .retrieve()
+                .body(NewsTotalArticles.class);
+
+        if (response != null && response.articles() != null) {
+            response.articles().forEach(article -> article.setCategory(category));
+            response.articles().parallelStream().forEach(this::scrapFullText);
+        }
+        return response != null
+                ? response
+                : new NewsTotalArticles(0L, Collections.emptyList());
+    }
+
+    private String getArticleUniqueKey(NewsInfo article) {
+        if (article == null || article.getTitle() == null || article.getTitle().isBlank()) {
+            return article != null && article.getUrl() != null ? article.getUrl() : UUID.randomUUID().toString();
+        }
+        return article.getTitle().toLowerCase().replaceAll("[^a-záéíóúñ0-9]", "");
+    }
+
+    private List<NewsInfo> cleanAndSortArticles(List<NewsInfo> articles) {
+        if (articles == null || articles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return articles.stream()
+                .filter(article -> article.getUrl() != null && !article.getUrl().isBlank())
+                .filter(article -> article.getTitle() != null && !article.getTitle().isBlank())
+                .collect(Collectors.toMap(
+                        this::getArticleUniqueKey,
+                        article -> article,
+                        (existing, duplicate) -> existing,
+                        LinkedHashMap::new
+                ))
+                .values()
+                .stream()
+                .sorted(Comparator.comparing(
+                        NewsInfo::getPublishedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public void scrapFullText(NewsInfo article) {
@@ -108,14 +203,18 @@ public class NewsInfoService {
                     .distinct()
                     .collect(Collectors.joining("\n\n"));
 
-            if (text.length() > 500) article.setContent(text);
+            if (text.length() > 500) {
+                article.setContent(text);
+            }
         } catch (Exception ex) {
             System.err.println("No se pudo coger el texto de: " + article.getUrl());
         }
     }
 
-    public NewsTotalArticles fallbackGetNewsByCategory(String category, int maxArticles, Throwable t) {
-        System.err.println("Circuit Breaker activado para categoría " + category + " - Motivo: " + t.getMessage());
+    public NewsTotalArticles fallBackGetNewsByCategory(String query, int maxArticles, int page, String category, Throwable throwable) {
+        System.err.println("Circuit Breaker activado para categoría " + category + " - Motivo: " + throwable.getMessage()
+        );
+
         return new NewsTotalArticles(0L, Collections.emptyList());
     }
 }

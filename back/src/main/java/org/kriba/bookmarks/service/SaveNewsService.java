@@ -6,10 +6,12 @@ import org.kriba.bookmarks.dto.ArticleInput;
 import org.kriba.bookmarks.dto.ArticleResponse;
 import org.kriba.bookmarks.model.SavedArticle;
 import org.kriba.bookmarks.repository.SavedNewsRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+
 
 @Service
 public class SaveNewsService {
@@ -57,8 +59,8 @@ public class SaveNewsService {
                 .ifPresent(savedNewsRepository::delete);
     }
 
-    public List<ArticleResponse> getSavedNews(Long userId) {
-        return savedNewsRepository.findAllByUserId(userId).stream()
+    public Page<ArticleResponse> getSavedNews(Long userId, Pageable pageable) {
+        return savedNewsRepository.findAllByUserId(userId,pageable)
                 .map(savedArticle -> ArticleResponse.builder()
                         .id(savedArticle.getId())
                         .externalArticleId(savedArticle.getExternalArticleId())
@@ -69,7 +71,6 @@ public class SaveNewsService {
                         .content(savedArticle.getContent())
                         .image(savedArticle.getImage())
                         .timeStamp(savedArticle.getTimeStamp())
-                        .build())
-                .toList();
+                        .build());
     }
 }
