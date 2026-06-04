@@ -24,6 +24,7 @@ public class RedisConfig {
                 );
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
+        cacheConfigs.put("newsByCategory", defaultCacheConfig.entryTtl(Duration.ofMinutes(15)));
         cacheConfigs.put("shortLivedCache", defaultCacheConfig.entryTtl(Duration.ofMinutes(5)));
         cacheConfigs.put("longLivedCache", defaultCacheConfig.entryTtl(Duration.ofHours(12)));
 
