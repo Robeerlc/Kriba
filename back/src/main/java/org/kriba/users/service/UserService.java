@@ -65,6 +65,7 @@ public class UserService {
                 .dailyAiLimit(savedUser.getDailyAiLimit())
                 .build();
     }
+
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
