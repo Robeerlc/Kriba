@@ -10,6 +10,7 @@ import org.kriba.summarize.dto.SummarizeResponse;
 import org.kriba.users.model.User;
 import org.kriba.users.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class SummarizeService {
     }
 
     @Transactional
+    @Cacheable(value = "summarizeCache", key = "#textContent + '-' + #articleUrl")
     public SummarizeResponse summarize(Long currentUserId, String textContent, String articleUrl, String category, String externalArticleId) {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
