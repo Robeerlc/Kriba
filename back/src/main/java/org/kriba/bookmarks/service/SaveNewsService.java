@@ -1,0 +1,76 @@
+package org.kriba.bookmarks.service;
+
+import org.kriba.analytics.model.Interaction;
+import org.kriba.analytics.repository.InteractionRepository;
+import org.kriba.bookmarks.dto.ArticleInput;
+import org.kriba.bookmarks.dto.ArticleResponse;
+import org.kriba.bookmarks.model.SavedArticle;
+import org.kriba.bookmarks.repository.SavedNewsRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+
+@Service
+public class SaveNewsService {
+
+    private final SavedNewsRepository savedNewsRepository;
+    private final InteractionRepository interactionRepository;
+
+    public SaveNewsService(SavedNewsRepository savedNewsRepository, InteractionRepository interactionRepository) {
+        this.savedNewsRepository = savedNewsRepository;
+        this.interactionRepository = interactionRepository;
+    }
+
+    @Transactional
+    public void saveNew(Long userId, ArticleInput savedNew) {
+        if (savedNewsRepository.existsByUserIdAndExternalArticleId(userId, savedNew.externalArticleId())) return;
+        SavedArticle savedArticle = SavedArticle.builder()
+                .userId(userId)
+                .externalArticleId(savedNew.externalArticleId())
+                .title(savedNew.title())
+                .category(savedNew.category())
+                .url(savedNew.url())
+                .description(savedNew.description())
+                .content(savedNew.content())
+                .image(savedNew.image())
+                .build();
+        savedNewsRepository.save(savedArticle);
+        if (!interactionRepository.existsByUserIdAndExternalArticleIdAndInteractionType(userId, savedNew.externalArticleId(), "SAVE")) {
+            Interaction interaction = Interaction.builder()
+                    .userId(userId)
+                    .externalArticleId(savedNew.externalArticleId())
+                    .articleCategory(savedNew.category())
+                    .interactionType("SAVE")
+                    .build();
+            interactionRepository.save(interaction);
+        }
+    }
+
+    @Transactional
+    public void unsave(Long userId, String externalArticleId) {
+        if (!savedNewsRepository.existsByUserIdAndExternalArticleId(userId, externalArticleId))
+            throw new IllegalArgumentException("El artículo no está guardado");
+        interactionRepository.findByUserIdAndExternalArticleIdAndInteractionType(userId, externalArticleId, "SAVE")
+                .ifPresent(interactionRepository::delete);
+        savedNewsRepository.findByUserIdAndExternalArticleId(userId, externalArticleId)
+                .ifPresent(savedNewsRepository::delete);
+    }
+
+    public Page<ArticleResponse> getSavedNews(Long userId, Pageable pageable) {
+        return savedNewsRepository.findAllByUserId(userId,pageable)
+                .map(savedArticle -> ArticleResponse.builder()
+                        .id(savedArticle.getId())
+                        .externalArticleId(savedArticle.getExternalArticleId())
+                        .title(savedArticle.getTitle())
+                        .category(savedArticle.getCategory())
+                        .url(savedArticle.getUrl())
+                        .description(savedArticle.getDescription())
+                        .content(savedArticle.getContent())
+                        .image(savedArticle.getImage())
+                        .timeStamp(savedArticle.getTimeStamp())
+                        .build());
+    }
+}
