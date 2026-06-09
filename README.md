@@ -14,8 +14,8 @@
 * **Backend:** ![Spring Boot](https://img.shields.io/badge/Java_Spring_Boot_4-6DB33F?style=flat-square&logo=spring-boot&logoColor=white).
 * **Seguridad:** ![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=json-web-tokens&logoColor=white) Autenticación stateless mediante JWT y delegación ![OAuth2](https://img.shields.io/badge/OAuth2-EB5424?style=flat-square&logo=auth0&logoColor=white) (ej. Google) gestionada por el backend.
 * **Persistencia:** ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white).
-* **Caché, Concurrencia y Resiliencia:** ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) (vía Spring Data Redis), **CompletableFuture** (Java Concurrency) y **Resilience4j**.
-* **Integraciones:** **GNews API**, **JSoup** (Web Scraping) y **Groq API / Llama 3** (procesamiento LLM ultrarrápido).
+* **Caché, Concurrencia y Resiliencia:** ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white) (vía Spring Data Redis) y **Resilience4j**.
+* **Integraciones:** **GNews API**, **JSoup** (Web Scraping) y **Gemini 3.1 Flash** (procesamiento LLM ultrarrápido).
 * **Infraestructura y Despliegue:** Despliegue continuo (**CI/CD**) en servidor privado utilizando ![Dokploy](https://img.shields.io/badge/Dokploy-6366F1?style=flat-square) para la gestión automatizada de contenedores (aplicación web, base de datos relacional y nodo de Redis).
 
 ---
